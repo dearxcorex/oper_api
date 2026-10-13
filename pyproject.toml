@@ -1,0 +1,22 @@
+[project]
+name = "nbtc-oper"
+version = "0.1.0"
+description = "Python client for the NBTC OPER inspection search (fmr.nbtc.go.th/Oper)"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.12",
+    "curl-cffi>=0.7",
+    "lxml>=5",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+# Not installed as a package: macOS marks the venv's editable .pth file hidden
+# and Python then skips it, so the code is run from the project root instead.
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

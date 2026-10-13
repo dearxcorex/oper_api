@@ -1,0 +1,1139 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>
+	NBTC OPERATION SYSTEM
+</title><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta http-equiv="X-UA-Compatible" content="ie=edge" /><link rel="stylesheet" href="../../_inc/iconfont/style.css" /><link rel="stylesheet" href="../../_inc/css/bootstrap.css" /><link rel="stylesheet" href="../../_inc/css/bootstrap-select.min.css" /><link rel="stylesheet" href="../../_inc/css/bootstrap-datepicker.css" /><link rel="stylesheet" href="../../_inc/css/bootstrap-datepicker3.css" /><link rel="stylesheet" href="../../_inc/css/style.css" /><link rel="stylesheet" href="../../_inc/css/sweetalert2.min.css" /><link rel="stylesheet" href="../../_inc.a/css/lightgallery.css" /><link rel="stylesheet" href="../../_inc/css/bootstrap-timepicker.css" />
+
+<script src="../../_inc/js/jquery-3.3.1.js"></script>
+<script src="../../_inc/js/popper.min.js"></script>
+<script src="../../_inc/js/bootstrap.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker-thai.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker.th.js"></script>
+
+<script src="../../_inc/js/bootstrap-select.min.js"></script>
+
+<script type="text/javascript" src="../../_inc/js/core.js"></script>
+<script type="text/javascript" src="../../_inc/js/sweetalert2.min.js"></script>
+
+<link rel="stylesheet" href="../../_inc/css/fileinput.css" />
+<script src="../../_inc/js/fileinput.js"></script>
+
+<script src="../../_inc/js/bootstrap-timepicker.js"></script>
+<script src="../../_inc/js/jquery.inputmask.bundle.js"></script>
+
+
+
+<style type="text/css">
+    .valid {
+        color: red;
+        margin-bottom: 0px;
+    }
+
+    .total-result {
+        font-size: 16px;
+    }
+</style>
+
+<script type="text/javascript">
+    var _menu = '';
+    function initWin() {
+        $('.iso-sidebar .iso-btn--togglemenu').click(function () {
+            $('.iso-container').addClass('active');
+        });
+        $('.iso-btn--togglemenu.togglemenu-outer').click(function () {
+            if ($(window).width() < 992 || _menu =="0") {
+                $('.iso-container').toggleClass('active');
+            } else {
+                $('.iso-container').removeClass('active');
+            }
+        });
+        if (_menu == "0") {
+            $('.iso-container').toggleClass('active');
+        }
+        $('.iso-icon--printer').parent().attr("target", "_blank");
+    }
+    $(function () {
+        $('select').attr("data-live-search", "true");
+        $('select').selectpicker();
+        $('.datepicker').datepicker();
+        $(".datepicker").inputmask({ "mask": "99/99/9999" });
+        $(".iso-btn--excel").click(function () {
+            window.open(location.href + "&export=xls");
+        });
+
+        $(".iso-btn--excel2").click(function () {
+            window.open(location.href + "&export=xls&xls=2");
+        });
+
+        $('.timepicker').timepicker({
+            'defaultTime': false,
+            'showMeridian': false,
+            'icons': {
+                'up': 'iso-icon--chevron-up',
+                'down': 'iso-icon--chevron-down'
+            }
+        });
+
+        initWin();
+
+        $('input[type="file"]').fileinput({
+            showPreview: false,
+            showUpload: false,
+            //browseOnZoneClick: true,
+            elErrorContainer: '#kartik-file-errors',
+            allowedFileExtensions: [],
+            browseLabel: 'เลือกไฟล์',
+            browseIcon: '<i class="iso-icon--folder"></i>',
+            removeLabel: 'ลบ',
+            removeIcon: '<i class="iso-icon--trash-2"></i>',
+            previewFileIcon: '<i class="iso-icon--trash-2"></i>',
+            msgPlaceholder: 'เลือกไฟล์ที่ต้องการ'
+            //uploadUrl: '/site/file-upload-single'
+        });
+        if (_fno == "add") {
+            $(".datepicker").each(function () {
+                if ($(this).val() == "" && $(this).attr("data-date") != "none")
+                    $(this).val('13/10/2569');
+            });
+        }
+    })
+
+
+    function updateSubSelect(ctlid, subid, selected) {
+        var val = $("#" + ctlid).val();
+        $("#" + subid).prop("disabled", true);
+        $("#" + subid).html("<option value='0'>กรุณาเลือก</option>");
+        $("#" + subid + "_raw > option").each(function () {
+            var vals = this.value.split(',');
+            if (vals[0] != "0" && vals[0] == val) {
+                var valx = vals[1];
+
+                $("#" + subid).append("<option value='" + valx + "' " + (selected && selected == valx ? " selected" : "") + ">" + this.text + "</option>");
+                $("#" + subid).prop("disabled", false);
+            }
+        });
+        $("#" + subid).selectpicker('refresh');
+    }
+
+
+    window.msgbox_save = function (rid, url, t) {
+        
+        if (rid > 0) {
+           // alert(url + " " + location);
+            if (parent && url == "close" && (parent.location.href + "").indexOf("fno=add") > -1) {
+               
+                parent.closeDialog();
+                return;
+            }
+
+
+            swal({
+                title: t ? t : "บันทึกข้อมูลเรียบร้อย",
+                text: "",
+                type: 'success',
+                confirmButtonClass: 'btn-primary',
+                confirmButtonText: 'ตกลง',
+            }).then(function () {
+                if (!url) return;
+                if (url == 'reload') {
+                    reloadPage(false);
+                    return;
+                }
+                if (url == 'close' || url == 'closesave') {
+                    parent.closeDialog();
+                    return;
+                }
+                if (url == 'reload-parent') {
+                    reloadPage(true)
+                    return;
+                }
+                location.href = url;
+            });
+        }
+        else if (rid == -1)
+            swal({
+                title: t ? t : "ไม่สามารถทำรายการได้/ข้อมูลไม่ถูกต้อง",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+            });
+        else if (rid == -2)
+            swal({
+                title: t ? t : "ข้อมูลซ้ำกับในระบบ",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+
+            });
+        else if (rid == -22)
+            swal({
+                title: t ? t : "ข้อมูลซ้ำกับในระบบ",
+                text: "",
+                showCancelButton: true,
+                type: 'warning',
+                cancelButtonText: 'ตกลง',
+                confirmButtonText: 'ดูข้อมูล',
+                confirmButtonClass: 'btn-primary'
+            }).then(function (result) {
+                if (result.value) {
+                    window.open(url);
+                }
+            });
+        else if (rid == -3)
+            swal({
+                title: t ? t : "ข้อมูลผิดพลาด",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+            });
+    }
+
+    function delItem(fn, id, val, url, qs) {
+        swal({
+            title: 'ต้องการลบข้อมูลนี้',
+            text: "หากลบแล้วจะไม่สามารถกู้คืนได้",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+            cancelButtonText: '<i></i>ยกเลิก',
+            confirmButtonClass: 'btn-primary',
+        }).then(function (result) {
+            if (result.value) {
+                $.ajax({
+                    type: 'POST',
+                    url: "../data/dDelItem.ashx" + (qs ? "?" + qs : ""),
+                    data: { sp: fn, id: id, val: val },
+                    cache: false,
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.result == "OK") {
+                            swal({
+                                title: 'ลบข้อมูลสำเร็จ',
+                                text: "ข้อมูลถูกลบแล้ว",
+                                type: 'success',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            }).then(function () {
+                                if (!url) return;
+                                if (url == 'reload') {
+                                    reloadPage(false);
+                                    return;
+                                }
+                                if (url == 'close') {
+                                    parent.closeDialog();
+                                    return;
+                                }
+                                if (url == 'reload-parent') {
+                                    reloadPage(true)
+                                    return;
+                                }
+
+                                location.href = url;
+                            });
+                        } else {
+                            swal({
+                                title: 'ลบข้อมูลไม่สำเร็จ',
+                                type: 'error',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                    }
+                });
+            }
+        });
+    }
+
+    function reloadPage(isparent) {
+        if (isparent)
+            parent.location.href = parent.location.href;
+        else
+            location.href = location.href
+    }
+
+    function apvItem(ff, id) {
+        swal({
+            title: 'อนุมัติข้อมูลนี้',
+            text: "",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+            cancelButtonText: '<i></i>ยกเลิก',
+            confirmButtonClass: 'btn-primary',
+        }).then(function (result) {
+            if (result.value) {
+                $.ajax({
+                    type: 'POST',
+                    url: "../data/dApvItem.ashx",
+                    data: { ff: ff, id: id },
+                    cache: false,
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.result == "OK") {
+                            swal({
+                                title: 'อนุมัติเรียบร้อยแล้ว',
+                                text: "",
+                                type: 'success',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            }).then(function () {
+                                location = location.href;
+                            });
+                        } else {
+                            swal({
+                                title: 'อนุมัติไม่สำเร็จ',
+                                type: 'error',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                    }
+                });
+            }
+        });
+    }
+
+    var _fno = '';
+
+    function setPageFno() {
+        if (_fno != "add" && _fno != "edit") {
+            $(".x-det").show();
+            $(".x-add").hide();
+            //$(".mrta-title span").html("");
+            $(".form-group").each(function () {
+                var f = $(this);
+                var t = "";
+                //if(f.find("select").prop("id")) alert(f.html());
+
+                if (f.find("textarea").prop("id")) {
+                    t = f.find("textarea").val(); f.find("textarea").hide();
+                }
+                else if (f.find("input").prop("id") && f.find("input").prop("type") == "text") { t = f.find("input").val(); f.find("input").hide(); }
+                else if (f.find("select").prop("id") && f.find("select").prop("multiple")) { t = f.find("select option:selected").toArray().map(item => item.text).join(", "); f.find(".bootstrap-select").hide(); }
+                else if (f.find("select").prop("id")) { t = f.find("select option:selected").text(); f.find(".bootstrap-select").hide(); }
+
+                if (t == "กรุณาเลือก") t = "";
+                t = t.replace("กรุณาเลือก", "");
+                t = t.replace("กรุณาเลือก", "");
+                t = t.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                f.find("p>b").html("");
+                f.append('<p><b>' + t + '&nbsp;</b></p>');
+
+
+            });
+            $("input[type=checkbox]").attr("onclick", "return false");
+            $("input[type=radio]").attr("onclick", "return false");
+        } else {
+            $(".x-add").show();
+            $(".x-det").hide();
+            // $(".mrta-title span").html(_fno == "edit"?"แก้ไขข้อมูล":"เพิ่มข้อมูล");
+        }
+        //setIsAdd();
+    }
+
+    var __qParams = "";
+    function schData() {
+        var parms = []
+        $("#FormSch select").each(function () {
+            parms.push(this.id + "=" + this.value.trim());
+        });
+        $("#FormSch input[type=text]").each(function () {
+            parms.push(this.id + "=" + escape(this.value.trim()));
+        });
+        location = location.toString().replace(location.search, "") + "?" + parms.join('&') + "&" + __qParams;
+    }
+
+    function schDataPrint(src) {
+        var Ids = []
+        $('input[name=chkIds]:checked').each(function () {
+            Ids.push(this.value)
+        });
+
+        window.open(src + location.search + "&IDs=" + Ids.join(','));
+    }
+    function schDataPrintPdf(src, p) {
+        var Ids = []
+        $('input[name=chkIds]:checked').each(function () {
+            Ids.push(this.value)
+        });
+
+        pdf(src + location.search + "&IDs=" + Ids.join(','), p);
+    }
+
+
+    var lg;
+    function openDialog(src) {
+        lg = $(this).lightGallery({
+            width: '700px',
+            height: '470px',
+            dynamic: true,
+            mode: 'lg-fade',
+            addClass: 'fixed-size',
+            counter: false,
+            download: false,
+            startClass: '',
+            enableSwipe: false,
+            enableDrag: false,
+            backdropDuration: 500,
+            dynamicEl: [{
+                "iframe": true,
+                "src": src,
+            }]
+        });
+    }
+
+    function loadItemData(div, url, del) {
+        if (_fno != "add" && _fno != "edit")
+            url += "&det=1";
+        if (del) {
+            url += del;
+            swal({
+                title: 'ต้องการลบข้อมูลนี้',
+                text: "หากลบแล้วจะไม่สามารถกู้คืนได้",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+                cancelButtonText: '<i></i>ยกเลิก',
+                confirmButtonClass: 'btn-primary',
+            }).then(function (result) {
+                if (result.value) {
+                    loadItemData2(div, url);
+                }
+            }
+            );
+        }
+        else {
+            loadItemData2(div, url);
+        }
+    }
+
+    function loadItemData2(div, url) {
+        // window.open(url);
+        $("#" + div).load(url, {},
+            function () {
+                if (typeof (loadItemData_done) != "undefined")
+                    loadItemData_done();
+            });
+    }
+
+    function rid() {
+        var text = "";
+        var possible = "0123456789";
+
+        for (var i = 0; i < 8; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
+
+
+    function openModalDialog(src) {
+        $('#modalDialog iframe').prop("src", src);
+        $('#modalDialog').modal('show');
+    }
+
+    
+    window.closeDialog = function () {
+       $('#modalDialog').modal('hide');
+    };
+    
+
+    function pdf(url, paper) {
+        window.open("../Report/PDF.aspx?" + (paper ? "paper=" + paper + "&" : "") + "url=" + escape(url));
+    }
+
+    function openProfile() {
+        openModalDialog("../Main/mProfile.aspx?r=" + rid());
+    }
+    function pdfms(url, paper) {
+        swal({
+            html: "กรุณาเลือก Map source : <select id='maptype_src'>" + $("#iMap").contents().find("#maptype_src").html() + "</select>",
+            //type: 'question',
+            confirmButtonClass: 'btn-primary',
+            confirmButtonText: 'ตกลง',
+            cancelButtonText: 'ยกเลิก',
+            showCancelButton: true
+        }).then(function (result) {
+            if (result.value) {
+                url += "&mapsrc=" + $("#maptype_src").val();
+                window.open("../Report/PDF.aspx?" + (paper ? "paper=" + paper + "&" : "") + "url=" + escape(url));
+            }
+        });
+        
+    }
+    function printms(url) {
+        
+        swal({
+            html: "กรุณาเลือก Map source : <select id='maptype_src'>" + $("#iMap").contents().find("#maptype_src").html() + "</select>",
+            //type: 'question',
+            confirmButtonClass: 'btn-primary',
+            confirmButtonText: 'ตกลง',
+            cancelButtonText: 'ยกเลิก',
+            showCancelButton: true
+        }).then(function (result) {
+            if (result.value)
+                window.open(url + "&mapsrc=" + $("#maptype_src").val());
+        });
+    }
+</script>
+
+
+     <script language=javascript src="../../_inc/js/dpv.js"></script>
+     <script language=javascript src="../../_inc/js/pvscp.js"></script>
+	<script type="text/javascript">
+       
+		$(function () {
+			parent.msgbox_save(0, "close");
+			//parent.loadItem();
+            updateSubSelect('StnTypeID', 'StnSubTypeID', '0');
+
+            $("#StnTypeID").change(function () {
+                updateSubSelect(this.id, 'StnSubTypeID');
+            });
+            setPATZ();
+
+            if ($('#collapse_search').length > 0) {
+                $('#collapse_search').removeClass('show')
+            }
+
+            
+
+        });
+
+        function selStn(stnID,s_id){
+            parent.selStn(stnID);
+            parent.closeDialog();
+        }
+
+        function setPATZ() {
+            setProv('sProv1', '36');
+            setAumphoe('sAumphoe1', '36', '3600', 'sTambol1');
+            setTambol('sTambol1', '3600', '360000');
+
+            $("#sProv1").change(function () { setAumphoe('sAumphoe1', $("#sProv1").val(), '0', 'sTambol1'); });
+            $("#sAumphoe1").change(function () { setTambol('sTambol1', $("#sAumphoe1").val(), '0'); });
+            $("#sTambol1").change(function () { setZipCode('ZipCode', $("#sTambol1").val(), ""); });
+
+            
+                var provids = ('0,,31,30,36').split(',');
+                $('#sProv1 option').each(function () {
+                    if ($.inArray($(this).val(), provids) === -1) {
+                        $(this).remove();
+                    }
+                });
+                $('#sProv1').selectpicker('refresh');
+            
+        }
+
+        function addStn() {
+            location = ("../STN/mSTN.aspx?St=&fno=add");
+        }
+    </script>
+
+	<style type="text/css">
+		.valid{
+			color: red;
+		}
+	</style>
+</head>
+<body>
+	<div class="modal-header">
+		<h5 class="modal-title" id="exampleModalLabel">สถานี</h5>
+          <button onclick="addStn()" type="button" class="btn btn-primary mx-auto">เพิ่มสถานี</button>
+		<button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="parent.closeDialog()">
+			<i class="iso-icon--x"></i>
+		</button>
+	</div>
+	<form method="post" action="./mStnSch.aspx?StnSubTypeID_raw=0&amp;StnTypeID=4&amp;StnSubTypeID=0&amp;sProv1=36&amp;sAumphoe1=0&amp;sTambol1=0&amp;SrcData=&amp;AreaID=8&amp;StnName=&amp;Freq=&amp;StaLoc=&amp;SiteCode=&amp;LicNo=&amp;ff=11" id="FormSch">
+<div class="aspNetHidden">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKLTk2MDkxMTEyNA8WAh4TVmFsaWRhdGVSZXF1ZXN0TW9kZQIBFgICAQ9kFgoCAQ8QZBAVJx7guIHguKPguLjguJPguLLguYDguKXguLfguK3guIEDQVdOA0RUTgNUVUMDQ0FUA1RPVCrguKrguJbguLLguJnguLXguKfguLTguJfguKLguLjguKvguKXguLHguIEt4Liq4LiW4Liy4LiZ4Li14Lin4Li04LiX4Lii4Li44LiX4LiU4Lil4Lit4LiHG+C4quC4luC4suC4meC4teC4q+C4peC4seC4gRjguKrguJbguLLguJnguLXguKPguK3guIcCTlQY4Lib4Lij4Liw4LiI4Liz4LiX4Li14LmIb+C4o+C4luC4m+C4j+C4tOC4muC4seC4leC4tOC4geC4suC4o+C4lOC4suC4p+C5gOC4l+C4teC4ouC4oeC4quC4t+C5iOC4reC4quC4suC4o+C5gOC4hOC4peC4t+C5iOC4reC4meC4l+C4teC5iBXguYTguKHguYjguKPguLDguJrguLg/4Lij4Liw4Lia4Lia4LiV4Li04LiU4LiV4Liy4Lih4LmA4Lij4Li34Lit4Lib4Lij4Liw4Lih4LiHIChWTVMpA0FXTgNEVE4DVFVDA0NBVANUT1QCTlQY4Lib4Lij4Liw4LiI4Liz4LiX4Li14LmIHuC5gOC4hOC4peC4t+C5iOC4reC4meC4l+C4teC5iCHguKrguJbguLLguJnguLXguYDguKPguJTguLLguKvguYxC4Lij4Liw4Lia4Lia4Liq4Li34LmI4Lit4Liq4Liy4LijICjguYDguITguKPguLfguYjguK3guIfguJrguLTguJkpcuC4o+C4sOC4muC4muC5gOC4hOC4o+C4t+C5iOC4reC4h+C4iuC5iOC4p+C4ouC4geC4suC4o+C5gOC4lOC4tOC4meC4reC4suC4geC4suC4qCAo4LmA4LiE4Lij4Li34LmI4Lit4LiH4Lia4Li04LiZKVfguKPguLDguJrguJrguJXguLTguJTguJXguLLguKHguK3guLLguIHguLLguKjguKLguLLguJkgKOC5gOC4hOC4o+C4t+C5iOC4reC4h+C4muC4tOC4mSk54Lij4Liw4Lia4Lia4Liq4Li34LmI4Lit4Liq4Liy4LijICjguKDguLLguITguJ7guLfguYnguJkpaeC4o+C4sOC4muC4muC5gOC4hOC4o+C4t+C5iOC4reC4h+C4iuC5iOC4p+C4ouC4geC4suC4o+C5gOC4lOC4tOC4meC4reC4suC4geC4suC4qCAo4Lig4Liy4LiE4Lie4Li34LmJ4LiZKU7guKPguLDguJrguJrguJXguLTguJTguJXguLLguKHguK3guLLguIHguLLguKjguKLguLLguJkgKOC4oOC4suC4hOC4nuC4t+C5ieC4mSkV4LmE4Lih4LmI4Lij4Liw4Lia4Li4Z+C4m+C4o+C4sOC5gOC4oOC4l+C4geC4tOC4iOC4geC4suC4o+C4l+C4suC4h+C4mOC4uOC4o+C4geC4tOC4iCDguKPguLDguJTguLHguJrguJfguYnguK3guIfguJbguLTguYjguJlL4Lib4Lij4Liw4LmA4Lig4LiX4LiB4Li04LiI4LiB4Liy4Lij4Lia4Lij4Li04LiB4Liy4Lij4Liq4Liy4LiY4Liy4Lij4LiT4LiwReC4m+C4o+C4sOC5gOC4oOC4l+C4geC4tOC4iOC4geC4suC4o+C4muC4o+C4tOC4geC4suC4o+C4iuC4uOC4oeC4iuC4mUTguJrguKPguLTguIHguLLguKPguKrguLLguJjguLLguKPguJPguLDguJvguKPguLDguYDguKDguJfguJfguLXguYggMUTguJrguKPguLTguIHguLLguKPguKrguLLguJjguLLguKPguJPguLDguJvguKPguLDguYDguKDguJfguJfguLXguYggMkTguJrguKPguLTguIHguLLguKPguKrguLLguJjguLLguKPguJPguLDguJvguKPguLDguYDguKDguJfguJfguLXguYggM1vguJvguKPguLDguYDguKDguJfguIHguLTguIjguIHguLLguKPguJfguLLguIfguJjguLjguKPguIHguLTguIgg4Lij4Liw4LiU4Lix4Lia4LiK4Liy4LiV4Li0ZOC4m+C4o+C4sOC5gOC4oOC4l+C4geC4tOC4iOC4geC4suC4o+C4l+C4suC4h+C4mOC4uOC4o+C4geC4tOC4iCDguKPguLDguJTguLHguJrguKDguLnguKHguLTguKDguLLguIQVJwEwAzEsMQMxLDIDMSwzAzEsNAMxLDUDNCw2AzQsNwM1LDgDNSw5BDEsMTAFMTAsMTEFMTAsMTIEOCwxMwQ4LDE0BDgsMTUEOCwxNgQ4LDE3BDgsMTgEOCwxOQQ4LDIwBDIsMjEEMiwyMgQ4LDIzBTEyLDI0BTEyLDI1BTEyLDI2BTEyLDI3BTEyLDI4BTEyLDI5BDQsMzAENCwzMQQ0LDMyBDQsMzMENCwzNAQ0LDM1BDQsMzYENCwzNwQ0LDM4FCsDJ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2RkAgUPEGQQFQoe4LiB4Lij4Li44LiT4Liy4LmA4Lil4Li34Lit4LiBLeC4geC4tOC4iOC4geC4suC4o+C4l+C4suC4h+C4geC4suC4o+C4muC4tOC4mSfguIjguLjguJTguJfguLXguYjguKPguLHguJrguYHguIjguYnguIcz4Lic4Li54LmJ4LmE4LiU4LmJ4Lij4Lix4Lia4LmD4Lia4Lit4LiZ4Li44LiN4Liy4LiVLeC4quC4luC4suC4meC4teC5gOC4hOC5gOC4muC4tOC4peC4l+C4teC4p+C4tUrguKrguJbguLLguJnguLXguJTguLLguKfguYDguJfguLXguKLguKHguKDguLLguITguJ7guLfguYnguJnguJTguLTguJkgVlNBVDzguKrguJbguLLguJnguLXguYLguJfguKPguJfguLHguKjguJnguYzguJTguLTguIjguLTguJXguK3guKVF4Liq4LiW4Liy4LiZ4Li14LmC4LiX4Lij4Lio4Lix4Lie4LiX4LmM4LmA4LiE4Lil4Li34LmI4Lit4LiZ4LiX4Li14LmIM+C4quC4luC4suC4meC4teC5geC4oeC5iOC4guC5iOC4suC4ouC4p+C4tOC4l+C4ouC4uD/guKrguJbguLLguJnguLXguKfguLTguJfguKLguLjguIHguKPguLDguIjguLLguKLguYDguKrguLXguKLguIcVCgEwAjEyATgCMTEBOQIxMAE1ATEBMgE0FCsDCmdnZ2dnZ2dnZ2dkZAIHDxBkEBUnHuC4geC4o+C4uOC4k+C4suC5gOC4peC4t+C4reC4gQNBV04DQVdOA0NBVANDQVQDRFROA0RUTgJOVAJOVANUT1QDVE9UA1RVQwNUVUMe4LmA4LiE4Lil4Li34LmI4Lit4LiZ4LiX4Li14LmIROC4muC4o+C4tOC4geC4suC4o+C4quC4suC4mOC4suC4o+C4k+C4sOC4m+C4o+C4sOC5gOC4oOC4l+C4l+C4teC5iCAxROC4muC4o+C4tOC4geC4suC4o+C4quC4suC4mOC4suC4o+C4k+C4sOC4m+C4o+C4sOC5gOC4oOC4l+C4l+C4teC5iCAyROC4muC4o+C4tOC4geC4suC4o+C4quC4suC4mOC4suC4o+C4k+C4sOC4m+C4o+C4sOC5gOC4oOC4l+C4l+C4teC5iCAzGOC4m+C4o+C4sOC4iOC4s+C4l+C4teC5iBjguJvguKPguLDguIjguLPguJfguLXguYhb4Lib4Lij4Liw4LmA4Lig4LiX4LiB4Li04LiI4LiB4Liy4Lij4LiX4Liy4LiH4LiY4Li44Lij4LiB4Li04LiIIOC4o+C4sOC4lOC4seC4muC4iuC4suC4leC4tGfguJvguKPguLDguYDguKDguJfguIHguLTguIjguIHguLLguKPguJfguLLguIfguJjguLjguKPguIHguLTguIgg4Lij4Liw4LiU4Lix4Lia4LiX4LmJ4Lit4LiH4LiW4Li04LmI4LiZZOC4m+C4o+C4sOC5gOC4oOC4l+C4geC4tOC4iOC4geC4suC4o+C4l+C4suC4h+C4mOC4uOC4o+C4geC4tOC4iCDguKPguLDguJTguLHguJrguKDguLnguKHguLTguKDguLLguIRF4Lib4Lij4Liw4LmA4Lig4LiX4LiB4Li04LiI4LiB4Liy4Lij4Lia4Lij4Li04LiB4Liy4Lij4LiK4Li44Lih4LiK4LiZS+C4m+C4o+C4sOC5gOC4oOC4l+C4geC4tOC4iOC4geC4suC4o+C4muC4o+C4tOC4geC4suC4o+C4quC4suC4mOC4suC4o+C4k+C4sBXguYTguKHguYjguKPguLDguJrguLgV4LmE4Lih4LmI4Lij4Liw4Lia4Li4b+C4o+C4luC4m+C4j+C4tOC4muC4seC4leC4tOC4geC4suC4o+C4lOC4suC4p+C5gOC4l+C4teC4ouC4oeC4quC4t+C5iOC4reC4quC4suC4o+C5gOC4hOC4peC4t+C5iOC4reC4meC4l+C4teC5iHLguKPguLDguJrguJrguYDguITguKPguLfguYjguK3guIfguIrguYjguKfguKLguIHguLLguKPguYDguJTguLTguJnguK3guLLguIHguLLguKggKOC5gOC4hOC4o+C4t+C5iOC4reC4h+C4muC4tOC4mSlp4Lij4Liw4Lia4Lia4LmA4LiE4Lij4Li34LmI4Lit4LiH4LiK4LmI4Lin4Lii4LiB4Liy4Lij4LmA4LiU4Li04LiZ4Lit4Liy4LiB4Liy4LioICjguKDguLLguITguJ7guLfguYnguJkpP+C4o+C4sOC4muC4muC4leC4tOC4lOC4leC4suC4oeC5gOC4o+C4t+C4reC4m+C4o+C4sOC4oeC4hyAoVk1TKVfguKPguLDguJrguJrguJXguLTguJTguJXguLLguKHguK3guLLguIHguLLguKjguKLguLLguJkgKOC5gOC4hOC4o+C4t+C5iOC4reC4h+C4muC4tOC4mSlO4Lij4Liw4Lia4Lia4LiV4Li04LiU4LiV4Liy4Lih4Lit4Liy4LiB4Liy4Lio4Lii4Liy4LiZICjguKDguLLguITguJ7guLfguYnguJkpQuC4o+C4sOC4muC4muC4quC4t+C5iOC4reC4quC4suC4oyAo4LmA4LiE4Lij4Li34LmI4Lit4LiH4Lia4Li04LiZKTnguKPguLDguJrguJrguKrguLfguYjguK3guKrguLLguKMgKOC4oOC4suC4hOC4nuC4t+C5ieC4mSkY4Liq4LiW4Liy4LiZ4Li14Lij4Lit4LiHIeC4quC4luC4suC4meC4teC5gOC4o+C4lOC4suC4q+C5jC3guKrguJbguLLguJnguLXguKfguLTguJfguKLguLjguJfguJTguKXguK3guIcq4Liq4LiW4Liy4LiZ4Li14Lin4Li04LiX4Lii4Li44Lir4Lil4Lix4LiBG+C4quC4luC4suC4meC4teC4q+C4peC4seC4gRUnATABMQIxNQIxOAE0ATICMTYCMjACMTABNQIxOQIxNwEzAjIyAjM0AjM1AjM2AjExAjIxAjM3AjMxAjM4AjMzAjMyAjMwAjEzAjEyAjI1AjI4AjE0AjI2AjI5AjI0AjI3ATkCMjMBNwE2ATgUKwMnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZGQCEQ8QZGQUKwEAZAITDxBkZBQrAQBkZOh4cr8JfWP8o7wI8FE0qdPXRQRTCXn+blX1PuCEIWPf" />
+</div>
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="05CDCD03" />
+</div>
+         <div style="display:none">
+                       <div style='display:none'> <select name="StnSubTypeID_raw" id="StnSubTypeID_raw">
+	<option value="0">กรุณาเลือก</option>
+	<option value="1,1">AWN</option>
+	<option value="1,2">DTN</option>
+	<option value="1,3">TUC</option>
+	<option value="1,4">CAT</option>
+	<option value="1,5">TOT</option>
+	<option value="4,6">สถานีวิทยุหลัก</option>
+	<option value="4,7">สถานีวิทยุทดลอง</option>
+	<option value="5,8">สถานีหลัก</option>
+	<option value="5,9">สถานีรอง</option>
+	<option value="1,10">NT</option>
+	<option value="10,11">ประจำที่</option>
+	<option value="10,12">รถปฏิบัติการดาวเทียมสื่อสารเคลื่อนที่</option>
+	<option value="8,13">ไม่ระบุ</option>
+	<option value="8,14">ระบบติดตามเรือประมง (VMS)</option>
+	<option value="8,15">AWN</option>
+	<option value="8,16">DTN</option>
+	<option value="8,17">TUC</option>
+	<option value="8,18">CAT</option>
+	<option value="8,19">TOT</option>
+	<option value="8,20">NT</option>
+	<option value="2,21">ประจำที่</option>
+	<option value="2,22">เคลื่อนที่</option>
+	<option value="8,23">สถานีเรดาห์</option>
+	<option value="12,24">ระบบสื่อสาร (เครื่องบิน)</option>
+	<option value="12,25">ระบบเครื่องช่วยการเดินอากาศ (เครื่องบิน)</option>
+	<option value="12,26">ระบบติดตามอากาศยาน (เครื่องบิน)</option>
+	<option value="12,27">ระบบสื่อสาร (ภาคพื้น)</option>
+	<option value="12,28">ระบบเครื่องช่วยการเดินอากาศ (ภาคพื้น)</option>
+	<option value="12,29">ระบบติดตามอากาศยาน (ภาคพื้น)</option>
+	<option value="4,30">ไม่ระบุ</option>
+	<option value="4,31">ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</option>
+	<option value="4,32">ประเภทกิจการบริการสาธารณะ</option>
+	<option value="4,33">ประเภทกิจการบริการชุมชน</option>
+	<option value="4,34">บริการสาธารณะประเภทที่ 1</option>
+	<option value="4,35">บริการสาธารณะประเภทที่ 2</option>
+	<option value="4,36">บริการสาธารณะประเภทที่ 3</option>
+	<option value="4,37">ประเภทกิจการทางธุรกิจ ระดับชาติ</option>
+	<option value="4,38">ประเภทกิจการทางธุรกิจ ระดับภูมิภาค</option>
+</select></div>
+               
+                </div>
+        <div style="display:none"><input name="AreaID" type="text" id="AreaID" value="8" /></div>
+		<div class="modal-body">
+              <div class="collapse show" id="collapse_search">
+			<div class="row">
+				  <div class="col-12 col-md-4 col-lg-4">
+					<div class="form-group">
+						<label>สถานี</label>
+						<select name="StnTypeID" id="StnTypeID" title="เลือก">
+	<option value="0">กรุณาเลือก</option>
+	<option value="12">กิจการทางการบิน</option>
+	<option value="8">จุดที่รับแจ้ง</option>
+	<option value="11">ผู้ได้รับใบอนุญาต</option>
+	<option value="9">สถานีเคเบิลทีวี</option>
+	<option value="5">สถานีโทรทัศน์ดิจิตอล</option>
+	<option value="1">สถานีโทรศัพท์เคลื่อนที่</option>
+	<option value="2">สถานีแม่ข่ายวิทยุ</option>
+	<option selected="selected" value="4">สถานีวิทยุกระจายเสียง</option>
+</select>
+					</div>
+				</div>
+                <div class="col-12 col-md-4 col-lg-4">
+                            <div class="form-group">
+                                <label>ประเภทสถานี</label>
+                                <select name="StnSubTypeID" id="StnSubTypeID">
+	<option selected="selected" value="0">กรุณาเลือก</option>
+	<option value="1">AWN</option>
+	<option value="15">AWN</option>
+	<option value="18">CAT</option>
+	<option value="4">CAT</option>
+	<option value="2">DTN</option>
+	<option value="16">DTN</option>
+	<option value="20">NT</option>
+	<option value="10">NT</option>
+	<option value="5">TOT</option>
+	<option value="19">TOT</option>
+	<option value="17">TUC</option>
+	<option value="3">TUC</option>
+	<option value="22">เคลื่อนที่</option>
+	<option value="34">บริการสาธารณะประเภทที่ 1</option>
+	<option value="35">บริการสาธารณะประเภทที่ 2</option>
+	<option value="36">บริการสาธารณะประเภทที่ 3</option>
+	<option value="11">ประจำที่</option>
+	<option value="21">ประจำที่</option>
+	<option value="37">ประเภทกิจการทางธุรกิจ ระดับชาติ</option>
+	<option value="31">ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</option>
+	<option value="38">ประเภทกิจการทางธุรกิจ ระดับภูมิภาค</option>
+	<option value="33">ประเภทกิจการบริการชุมชน</option>
+	<option value="32">ประเภทกิจการบริการสาธารณะ</option>
+	<option value="30">ไม่ระบุ</option>
+	<option value="13">ไม่ระบุ</option>
+	<option value="12">รถปฏิบัติการดาวเทียมสื่อสารเคลื่อนที่</option>
+	<option value="25">ระบบเครื่องช่วยการเดินอากาศ (เครื่องบิน)</option>
+	<option value="28">ระบบเครื่องช่วยการเดินอากาศ (ภาคพื้น)</option>
+	<option value="14">ระบบติดตามเรือประมง (VMS)</option>
+	<option value="26">ระบบติดตามอากาศยาน (เครื่องบิน)</option>
+	<option value="29">ระบบติดตามอากาศยาน (ภาคพื้น)</option>
+	<option value="24">ระบบสื่อสาร (เครื่องบิน)</option>
+	<option value="27">ระบบสื่อสาร (ภาคพื้น)</option>
+	<option value="9">สถานีรอง</option>
+	<option value="23">สถานีเรดาห์</option>
+	<option value="7">สถานีวิทยุทดลอง</option>
+	<option value="6">สถานีวิทยุหลัก</option>
+	<option value="8">สถานีหลัก</option>
+</select>
+                              
+                            </div>
+                        </div>
+				<div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>ชื่อสถานี</label>
+                        <input name="StnName" type="text" id="StnName" class="form-control" />
+				    </div>
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>ความถี่</label>
+                        <input name="Freq" type="text" id="Freq" class="form-control" />
+				    </div>
+                </div>
+                  <div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>ที่ตั้ง</label>
+                        <input name="StaLoc" type="text" id="StaLoc" class="form-control" />
+				    </div>
+                </div>
+                  <div class="col-12 col-md-4 col-lg-4">
+                            <div class="form-group">
+                                <label>
+                                    จังหวัด</label>
+                                <select name="sProv1" id="sProv1">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+                         <div class="col-12 col-md-4 col-lg-4">
+                            <div class="form-group">
+                                <label>
+                                    อำเภอ</label>
+                                <select name="sAumphoe1" id="sAumphoe1" disabled="disabled">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+                          <div class="col-12 col-md-4 col-lg-4">
+                            <div class="form-group">
+                                <label>
+                                    ตำบล</label>
+                                <select name="sTambol1" id="sTambol1" disabled="disabled">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+               
+                       <div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>รหัสสถานี</label>
+                        <input name="SiteCode" type="text" id="SiteCode" class="form-control" />
+				    </div>
+                </div>
+                       <div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>เลขที่ใบอนุญาต</label>
+                        <input name="LicNo" type="text" id="LicNo" class="form-control" />
+				    </div>
+                </div>
+                         <div class="col-12 col-md-4 col-lg-4">
+                    <div class="form-group">
+                        <label>แหล่งข้อมูล</label>
+                       <select name="SrcData" id="SrcData" title="กรุณาเลือก">
+	<option selected="selected" value="">ทั้งหมด</option>
+	<option value="ASMS">ASMS</option>
+	<option value="WEB">WEB</option>
+	<option value="BCS">BCS</option>
+	<option value="BCS2">BCS2</option>
+	<option value="BCS3">BCS3</option>
+	<option value="OPER">OPER</option>
+</select>
+				    </div>
+                </div>
+                  </div>
+                  </div>
+                   <div class="row">
+                    <div class="col-12">
+                        <button onclick="schData()" type="button" class="btn btn-primary iso-btn--search mx-auto" data-toggle="collapse"
+                            data-target="#collapse_search" aria-expanded="false" aria-controls="collapseForm">
+                            <i class="iso-icon--search"></i>ค้นหา</button>
+                        <button type="button" class="btn btn-primary iso-btn--edit mx-auto" data-toggle="collapse"
+                            data-target="#collapse_search" aria-expanded="false" aria-controls="collapseForm">
+                            <i class="iso-icon--chevron-down"></i>
+                        </button>
+                    </div>
+               
+			</div>
+		</div>
+	</form>
+
+    <div class="table-responsive mb-4" style='padding:20px'>
+         <p class="total-result">ผลการค้นหา 282  รายการ</p>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px">
+                                ลำดับ
+                            </th>
+                             <th>
+                                สถานี
+                            </th>
+                            <th>
+                                ประเภทสถานี
+                            </th>
+                             <th>รหัสสถานี</th>
+                            <th>
+                                ชื่อสถานี
+                            </th>
+                           <th>
+                                ความถี่
+                            </th>
+                            <th>
+                                ที่อยู่
+                            </th>
+                             <th>
+                                แหล่งข้อมูล
+                            </th>
+                             <th style="width: 60px">
+                                ข้อมูล
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('292727')">1</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('292727')">แก้งคร้อเรดิโอ</a></td>
+                                  <td></td>
+                                  <td>281 หมู่ 4 ต.ท่ามะไฟหวาน อ.แก้งคร้อ ชัยภูมิ 36150 ต.ท่ามะไฟหวาน อ.แก้งคร้อ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=292727" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('16168')">2</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td>05520395</td>
+                                <td><a href="javascript:selStn('16168')">ข้าวเหนียวเรดิโอ</a></td>
+                                  <td>90.50MHz</td>
+                                  <td>295 หมู่ 4 ต.ท่ามะไฟหวาน อ.แก้งคร้อ จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=16168" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('20181')">3</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td></td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('20181')">คณวัฒน์ เรดิโอ</a></td>
+                                  <td>106.5MHz</td>
+                                  <td>3 ม. 11 ต.บ้านแท่น อ.บ้านแท่น จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=20181" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('16112')">4</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</td>
+                                    <td>RFXL680847</td>
+                                <td><a href="javascript:selStn('16112')">เพชรนิรันดิ์ เรดิโอ</a></td>
+                                  <td>90.25MHz</td>
+                                  <td>158 ม.12 ต.หนองฉิม อ.เนินสง่า จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=16112" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('229875')">5</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุหลัก</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('229875')">สวส จส.5 ชัยภูมิ</a></td>
+                                  <td>567kHz</td>
+                                  <td>เลขที่ 5 ถนนชัยภูมิ-ภูเขียว ต.บ้านเล่า อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=229875" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('290388')">6</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('290388')">ท้องถิ่นไทยสมายเรดิโอ</a></td>
+                                  <td></td>
+                                  <td>138 หมู่ 2 ต.บ้านแท่น อ.บ้านแท่น ชัยภูมิ 36190 ต.บ้านแท่น อ.บ้านแท่น จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=290388" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('20145')">7</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td></td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('20145')">ลูกทุ่งเน็ตเวิร์ก จังหวัดชัยภูมิ</a></td>
+                                  <td>97.75MHz</td>
+                                  <td>วัดป่าสามัคคีธรรม บ้านโคกสะอาด ม.16 ต.โคกสะอาด อ.ภูเขียว จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=20145" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('292680')">8</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('292680')">ลูกพ่อขุน</a></td>
+                                  <td></td>
+                                  <td>65 หมู่ 21 ถ.รุ่งเรืองศรี ต.บ้านเพชร อ.บำเหน็จณรงค์ ชัยภูมิ 36160 ต.บ้านเพชร อ.บำเหน็จณรงค์ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=292680" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('291869')">9</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('291869')">วาไรตี้ เรดิโอ</a></td>
+                                  <td></td>
+                                  <td>253 หมู่ 2 ต.กุดน้ำใส อ.จัตุรัส ชัยภูมิ 36130 ต.กุดน้ำใส อ.จัตุรัส จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=291869" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('20185')">10</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td></td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('20185')">ใจสวรรค์เรดิโอ</a></td>
+                                  <td>96.25MHz</td>
+                                  <td>73 ม. 12 ต.ห้วยไร่ อ.คอนสวรรค์ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=20185" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('20237')">11</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td></td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('20237')">มหาชนคนรักถิ่น</a></td>
+                                  <td>99.76MHz</td>
+                                  <td>230/1 ม.4 ต.เจาทอง อ.ภักดีชุมพล จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=20237" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('16855')">12</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</td>
+                                    <td>RFXL681393</td>
+                                <td><a href="javascript:selStn('16855')">หนองบัวบาน เรดิโอ</a></td>
+                                  <td>99.00MHz</td>
+                                  <td>384 หมู่ 9 ต.หนองบัวบาน อ.จัตุรัส จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=16855" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('290105')">13</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('290105')">ห้วยบงเรดิโอ</a></td>
+                                  <td></td>
+                                  <td>87/1 หมู่ 2 หมู่บ้านบ้านห้วยบง ต.ห้วยบง อ.เมืองชัยภูมิ ชัยภูมิ 36000 ต.ห้วยบง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=290105" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('19558')">14</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td>05520445</td>
+                                <td><a href="javascript:selStn('19558')">พระพุทธศาสนาวัดชัยภูมิวนาราม</a></td>
+                                  <td>90.00MHz</td>
+                                  <td>107 หมู่ 4 อาคารหน่วยวิทยบริการ วัดวนาราม ถ.-ตาดโตน    6000 ต.ในเมือง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=19558" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('19650')">15</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</td>
+                                    <td>RFXL680847</td>
+                                <td><a href="javascript:selStn('19650')">สถานีเพชรนิรันด์เรดิโอ</a></td>
+                                  <td>90.25MHz</td>
+                                  <td>เลขที่ 158 ม.12 ต.หนองฉิม อ.เนินสง่า จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=19650" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('20170')">16</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>ประเภทกิจการทางธุรกิจ ระดับท้องถิ่น</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('20170')"> ข้าวเหนียวเรดิโอ</a></td>
+                                  <td>90.5MHz</td>
+                                  <td>295 ม. 4 ต.ท่ามะไฟหวาน อ.แก้งคร้อ จ.ชัยภูมิ</td>
+                                    <td>OPER</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=20170" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('290256')">17</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('290256')">BIG FM </a></td>
+                                  <td></td>
+                                  <td>60 หมู่ 1 อาคารวัดอีสาน ต.หนองนาแซง อ.เมืองชัยภูมิ ชัยภูมิ 36000 ต.หนองนาแซง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=290256" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('290789')">18</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('290789')">นครกาหลง</a></td>
+                                  <td></td>
+                                  <td>238 หมู่ 1 ต.โคกมั่งงอย อ.คอนสวรรค์ ชัยภูมิ 36140 ต.คอนสวรรค์ อ.คอนสวรรค์ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=290789" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('290567')">19</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td></td>
+                                <td><a href="javascript:selStn('290567')">นิวเรดิโอ</a></td>
+                                  <td></td>
+                                  <td>โฉนดที่ดิน เลขที่ 141023 ต.ลาดใหญ่ อ.เมืองชัยภูมิ ชัยภูมิ 36000 ต.ลาดใหญ่ อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                    <td>BCS</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=290567" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                                <tr>
+                                <td><a href="javascript:selStn('238746')">20</a></td>
+                                <td>สถานีวิทยุกระจายเสียง</td>
+                                    <td>สถานีวิทยุทดลอง</td>
+                                    <td>05550019</td>
+                                <td><a href="javascript:selStn('238746')">วิทยุชุมชนคลื่นของคนรักดี</a></td>
+                                  <td>94MHz</td>
+                                  <td>253 หมู่ 1 ถ.หนองบัวแดง-วังใหญ่ ต.เจาทอง อ.ภักดีชุมพล ชัยภูมิ 36260 ต.เจาทอง อ.ภักดีชุมพล จ.ชัยภูมิ</td>
+                                    <td>WEB</td>
+                                     <td>
+                                <a href="Stn.aspx?StnID=238746" target="_blank" class="btn iso-btn--icon mx-auto">
+                                    <i class="iso-icon--eye"></i>
+                                </a>
+                            </td>
+                               </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+<style>
+.sortup {background :url(../../img/sort_up.png) top center no-repeat #294D63;background-position-y:10px}
+.sortdown {background :url(../../img/sort_down.png) top center no-repeat #294D63;background-position-y:10px}
+.sortlink a {text-decoration:underline;color:#000000!important}
+</style>
+
+
+<div class="nbtc-pagination no-print-page" style='padding:20px'><a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=1' class="is-active">1</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=2' >2</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=3' >3</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=4' >4</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=5' >5</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=6' >6</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=7' >7</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=8' >8</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=9' >9</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=10' >10</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=11' >11</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=12' >12</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=13' >13</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=14' >14</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=15' >15</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=2'>&gt;</a> <a href='/Oper/ISO/STN/mStnSch.aspx?StnSubTypeID_raw=0&StnTypeID=4&StnSubTypeID=0&sProv1=36&sAumphoe1=0&sTambol1=0&SrcData=&AreaID=8&StnName=&Freq=&StaLoc=&SiteCode=&LicNo=&ff=11&page=15'>&gt;&gt;</a> </div><br />
+
+<script>window.__CF$cv$params={r:'a49f86b25d65a11e',t:'MTc5MTkwNjkwMA==',u:'01a135f96ca1773681ae78f42cf82771',ut:'nF260VR9VxhVRXoDbtebLRkgebnLzWE4WdZ6bWSo8Lg-1791906901-1.2.1.1-12jC32JvMtY0OKhiseAMF4Ku5Ck_GBLNo9Zc2zyULbqxvQfRWO2SGROOBJLtBkzA8gdSvwqZRw5heWW6fl2yF6FGWGlCaj5jG1ejv3PPlok',i:60};(function(){if(!document.body)return;var s=document.createElement('script');s.src='/cdn-cgi/challenge-platform/scripts/precursor/main.js';document.head.appendChild(s);})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"310afaa68ccd4637b4c869278f9c1350","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

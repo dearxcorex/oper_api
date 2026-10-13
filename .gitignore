@@ -1,0 +1,8 @@
+.env
+.probe/
+.venv/
+__pycache__/
+.pytest_cache/
+.nbtc_oper/
+out/
+fetched/
