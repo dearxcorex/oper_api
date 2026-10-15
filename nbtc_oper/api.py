@@ -179,14 +179,6 @@ class NbtcOper:
             SEARCH_PATH, build_query(**filters), parse.parse_search_page, "chk_id", max_pages, fresh
         )
 
-    def count(self, *, province=None, district=None, subdistrict=None, fresh=False, **filters):
-        """How many inspections match, from the first page's own total. One request."""
-        if province or district or subdistrict:
-            prov, dist, sub = places.resolve(self.places(), province, district, subdistrict)
-            filters.update(province_id=prov, district_id=dist, subdistrict_id=sub)
-        query = build_query(**filters) + [("page", "1")]
-        return parse.parse_search_page(self.session.get(SEARCH_PATH, query, fresh=fresh))["total"]
-
     def count_stations(self, *, fresh: bool = False, **filters) -> dict:
         """Distinct stations among the matching inspections. Walks every page."""
         result = self.search(fresh=fresh, **filters)
@@ -195,17 +187,6 @@ class NbtcOper:
             "stations": len({station_key(row) for row in result["rows"]}),
             "complete": result["complete"],
         }
-
-    def station_count(
-        self, *, province=None, district=None, subdistrict=None, fresh=False, **filters
-    ):
-        """How many register stations match, from the first page's own total."""
-        if province or district or subdistrict:
-            prov, dist, sub = places.resolve(self.places(), province, district, subdistrict)
-            filters.update(province_id=prov, district_id=dist, subdistrict_id=sub)
-        query = build_station_query(**filters) + [("page", "1")]
-        html = self.session.get(STATION_SEARCH_PATH, query, fresh=fresh)
-        return parse.parse_station_search_page(html)["total"]
 
     def station_search(
         self,

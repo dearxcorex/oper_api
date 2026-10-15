@@ -100,9 +100,10 @@ def _run(args) -> tuple[str, object]:
     skip = {"command", "output", "fresh", "ver_id", "no_raw", "details", "count", "count_stations"}
     filters = {k: v for k, v in vars(args).items() if k not in skip and v is not None}
     if args.count:
-        filters.pop("max_pages", None)
-        count = api.station_count if args.command == "stations" else api.count
-        return "count", count(fresh=args.fresh, **filters)
+        # Page 1 carries the portal's own total; one request.
+        filters["max_pages"] = 1
+        walk = api.station_search if args.command == "stations" else api.search
+        return "count", walk(fresh=args.fresh, **filters)["total"]
     if args.command == "search" and args.count_stations:
         filters.pop("max_pages", None)
         counted = api.count_stations(fresh=args.fresh, **filters)

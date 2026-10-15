@@ -42,7 +42,7 @@ result["total"], result["complete"], result["rows"][0]["chk_id"]
 detail = api.inspection(52390)        # lat, lng, station_id, nbtc_code, station{…}
 station = api.station(19363)
 stations = api.station_search(province="ชัยภูมิ", source="OPER")   # rows keyed by stn_id
-api.count(reported_from="2026-01-01", source_type_id=2)   # the portal's own total, 1 request
+api.search(reported_from="2026-01-01", source_type_id=2, max_pages=1)["total"]   # the portal's own total, 1 request
 ```
 
 Dates are ISO in and out; the portal's Buddhist-era `dd/mm/yyyy` is converted
@@ -76,7 +76,7 @@ record keeps the untranslated portal fields under `raw`.
   (a station repeats across pages while another never shows), so a result
   still short after the re-walks is filled in one place level down: by
   province, then district, then sub-district.
-- **Counts.** `--count` / `count()` reads the portal's own total from page 1
+- **Counts.** `--count` / `search(max_pages=1)["total"]` reads the portal's own total from page 1
   and counts inspections. `--count-stations` / `count_stations()` walks every
   page and counts distinct stations: by station code, or by name, frequency
   and licence number for a row that has no code.
