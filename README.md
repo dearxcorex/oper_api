@@ -43,7 +43,14 @@ detail = api.inspection(52390)        # lat, lng, station_id, nbtc_code, station
 station = api.station(19363)
 stations = api.station_search(province="ชัยภูมิ", source="OPER")   # rows keyed by stn_id
 api.search(reported_from="2026-01-01", source_type_id=2, max_pages=1)["total"]   # the portal's own total, 1 request
+options = api.form_options()          # code tables: areas, issues, inspectors, test_equipment, …
+api.find_stations(district="ภูเขียว", source="BCS")   # short summaries for a chat model
+api.find_stations(frequency=91.75, details=True)     # + licence, expiry, operator
 ```
+
+`nbtc_oper.llm` holds the same search as a tool definition in the Anthropic
+Messages format (`FIND_STATIONS_TOOL`, `TOOLS`) and `run_tool(api, name, input)`
+to dispatch a call.
 
 Dates are ISO in and out; the portal's Buddhist-era `dd/mm/yyyy` is converted
 at the edge. Places are Thai names (prefix optional) or portal codes. Every
@@ -76,6 +83,15 @@ record keeps the untranslated portal fields under `raw`.
   (a station repeats across pages while another never shows), so a result
   still short after the re-walks is filled in one place level down: by
   province, then district, then sub-district.
+- **Form options.** `form_options()` reads the code tables out of the blank
+  add form (`FF11Chk.aspx?fno=add`, never submitted) and keeps them in `.nbtc_oper/form_options.json` until `fresh=True`.
+- **Chat summaries.** `find_stations()` wraps `station_search()` for a chat
+  model: it needs at least one of province, district, frequency or name; a
+  district alone is looked up across every province; frequency is the portal's
+  exact match in MHz; stations whose frequency reads 0.0 are dropped. Each
+  station is a short summary (place split into sub-district/district/province)
+  with no coordinates and no `raw`; `limit` caps how many come back while
+  `total` still counts them all.
 - **Counts.** `--count` / `search(max_pages=1)["total"]` reads the portal's own total from page 1
   and counts inspections. `--count-stations` / `count_stations()` walks every
   page and counts distinct stations: by station code, or by name, frequency

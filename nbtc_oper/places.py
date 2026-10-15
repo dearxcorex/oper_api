@@ -57,6 +57,15 @@ def _lookup(value, options: dict, what: str) -> str:
     return matches[0]
 
 
+def provinces_with_district(places: dict, district) -> list[str]:
+    """Province codes that have a district by this name (prefix optional)."""
+    return [
+        prov
+        for prov, districts in places["districts"].items()
+        if any(_bare(name) == _bare(str(district)) for name in districts.values())
+    ]
+
+
 def resolve(places: dict, province=None, district=None, subdistrict=None) -> tuple[str, str, str]:
     """-> (sProv1, sAumphoe1, sTambol1) values for the search form."""
     prov = _lookup(province, places["provinces"], "province")

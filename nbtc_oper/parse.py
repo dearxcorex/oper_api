@@ -40,6 +40,20 @@ STATION_COLUMNS = {
     "แหล่งข้อมูล": "source",
 }
 
+# form_options() table -> (select id on the add form, parent key). A "_raw"
+# select holds every option as "parent,child"; the page filters it client-side.
+FORM_OPTION_SELECTS = {
+    "regions": ("RegID", None),
+    "areas": ("AreaID_raw", "region_id"),
+    "source_types": ("SrcTypeID", None),
+    "issues": ("IssueID_raw", "source_type_id"),
+    "inspectors": ("ChkAuthID_1_raw", "area_id"),
+    "approvers": ("ApvNaID_raw", "area_id"),
+    "test_equipment": ("TestEq_raw", "area_id"),
+    "antennas": ("AntID", None),
+    "cables": ("CableID", None),
+}
+
 # Detail-page control id -> key. Everything else stays under "raw".
 DETAIL_FIELDS = {
     "StnID": "stn_id",
@@ -187,6 +201,68 @@ def parse_station_search_page(html: str) -> dict:
             rows.append(row)
 
     return {"total": total, "pages": pages, "rows": rows}
+
+
+def _options(soup, select_id: str, parent_key: str | None) -> list[dict]:
+    select = soup.find("select", id=select_id)
+    out = []
+    for option in select.find_all("option") if select else []:
+        value, name = option.get("value", ""), _text(option)
+        if parent_key:
+            parent, _, value = value.partition(",")
+            if not value:
+                continue
+        if value in ("", "0") or name in _PLACEHOLDERS:
+            continue
+        entry = {"id": int(value) if value.isdigit() else value, "name": name}
+        if parent_key:
+            entry[parent_key] = int(parent) if parent.isdigit() else parent
+        out.append(entry)
+    return out
+
+
+def parse_form_options(add_form_html: str) -> dict:
+    """The add form's dropdowns -> {table: [{"id", "name", parent id?}]}."""
+    soup = BeautifulSoup(add_form_html, "lxml")
+    return {
+        table: _options(soup, select_id, parent)
+        for table, (select_id, parent) in FORM_OPTION_SELECTS.items()
+    }
+
+
+def split_location(location: str | None) -> dict:
+    """'… ต.ผักปัง อ.ภูเขียว จ.ชัยภูมิ' -> the last sub-district, district, province named."""
+    out = {}
+    for key, prefix in (("subdistrict", "ต."), ("district", "อ."), ("province", "จ.")):
+        found = re.findall(re.escape(prefix) + r"\s*(\S+)", location or "")
+        out[key] = found[-1] if found else None
+    return out
+
+
+def compact_station(row: dict, record: dict | None = None) -> dict:
+    """A station-search row (plus its dSTN record, if fetched) -> a short summary.
+
+    For a chat model: no raw portal fields and no coordinates.
+    """
+    out = {
+        "stn_id": row["stn_id"],
+        "name": row.get("name"),
+        "frequency_mhz": row.get("frequency_mhz"),
+        "station_code": row.get("station_code"),
+        "station_subtype": row.get("station_subtype"),
+        "source": row.get("source"),
+        **split_location(row.get("location")),
+        "location": row.get("location"),
+    }
+    if record is not None:
+        out["licence_no"] = (record.get("licence_no") or "").strip() or None
+        if out["licence_no"] == "0":
+            out["licence_no"] = None
+        out["licence_expires"] = record.get("licence_expires")
+        out["operator"] = (record.get("operator") or "").strip() or None
+        out["nbtc_code"] = record.get("nbtc_code")
+        out["station_id"] = record.get("station_id")
+    return out
 
 
 def parse_detail_page(html: str, chk_id: int) -> dict:

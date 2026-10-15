@@ -193,6 +193,57 @@ def test_build_station_query_matches_the_portals_own_url():
     assert query["StnName"] == "" and query["Freq"] == ""
 
 
+# ---------- form options ----------
+
+def test_form_options_tables():
+    options = parse.parse_form_options(fixture("add_form_selects.html"))
+    assert options["regions"] == [{"id": 5, "name": "ภาค 2"}]
+    assert options["areas"] == [{"id": 8, "name": "เขต 23", "region_id": 5}]
+    assert {o["id"] for o in options["source_types"]} == {2, 3}
+    assert len(options["issues"]) == 14
+    assert len(options["antennas"]) == 67
+    assert len(options["cables"]) == 6
+    assert len(options["test_equipment"]) == 632
+    assert {"id": 214493, "name": "R-TCI-Chaiyaphum", "area_id": 8} in options["test_equipment"]
+    assert len(options["inspectors"]) == 427
+    assert len(options["approvers"]) == 80
+
+
+def test_form_options_skip_placeholders():
+    options = parse.parse_form_options(fixture("add_form_selects.html"))
+    names = [o["name"] for table in options.values() for o in table]
+    assert "กรุณาเลือก" not in names
+    assert all(o["id"] not in (0, "", "0") for table in options.values() for o in table)
+
+
+# ---------- find_stations ----------
+
+def test_split_location_takes_the_last_place_named():
+    loc = "7 หมู่ 3 ต.บ้านแก้ง อ.แก้งคร้อ ชัยภูมิ 36150 ต.บ้านแก้ง อ.ภูเขียว จ.ชัยภูมิ"
+    assert parse.split_location(loc) == {
+        "subdistrict": "บ้านแก้ง", "district": "ภูเขียว", "province": "ชัยภูมิ",
+    }
+    assert parse.split_location(None) == {"subdistrict": None, "district": None, "province": None}
+
+
+def test_compact_station_has_no_coordinates_or_raw():
+    row = parse.parse_station_search_page(fixture("station_search_page.html"))["rows"][0]
+    record = parse.shape_station(json.loads(fixture("station.json")))
+    out = parse.compact_station(row, record)
+    assert "raw" not in out and "lat" not in out and "lng" not in out
+    assert out["stn_id"] == row["stn_id"]
+    assert {"licence_no", "operator", "district", "province"} <= out.keys()
+
+
+def test_find_stations_tool_maps_onto_find_stations():
+    import inspect
+    from nbtc_oper import NbtcOper
+    from nbtc_oper.llm import FIND_STATIONS_TOOL
+
+    params = inspect.signature(NbtcOper.find_stations).parameters
+    assert set(FIND_STATIONS_TOOL["input_schema"]["properties"]) <= set(params)
+
+
 # ---------- places ----------
 
 @pytest.fixture(scope="module")
@@ -205,6 +256,11 @@ def test_places_resolve_names_with_or_without_prefix(gazetteer):
     assert places.resolve(gazetteer, "จ.ชัยภูมิ", "อ.เมืองชัยภูมิ") == ("36", "3601", "0")
     assert places.resolve(gazetteer, "ชัยภูมิ", "เมืองชัยภูมิ", "ในเมือง") == ("36", "3601", "360101")
     assert places.resolve(gazetteer, "กรุงเทพมหานคร", "คลองเตย")[1] == "1033"
+
+
+def test_district_alone_finds_its_province(gazetteer):
+    provinces = places.provinces_with_district(gazetteer, "อ.ภูเขียว")
+    assert [gazetteer["provinces"][p] for p in provinces] == ["จ.ชัยภูมิ"]
 
 
 def test_places_accept_codes_and_reject_unknown_names(gazetteer):

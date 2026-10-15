@@ -1,4 +1,5 @@
-"""The public surface: inspection search, inspection detail, station search and record."""
+"""The public surface: inspection search, inspection detail, station search and record,
+and the inspection form's code tables."""
 
 import json
 
@@ -118,6 +119,7 @@ class NbtcOper:
     def __init__(self, session: Session | None = None, **session_options):
         self.session = session or Session(**session_options)
         self._places = None
+        self._form_options = None
         self._alternate = None
 
     @property
@@ -156,6 +158,29 @@ class NbtcOper:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(json.dumps(self._places, ensure_ascii=False), encoding="utf-8")
         return self._places
+
+    def form_options(self, *, fresh: bool = False) -> dict:
+        """The inspection form's code tables: id -> name, with the parent id.
+
+        regions, areas (region_id), source_types, issues (source_type_id),
+        inspectors, approvers and test_equipment (area_id), antennas, cables.
+        regions and areas hold only the account's own; the area-keyed tables
+        hold every area's entries. Read from the blank add form, then kept in
+        .nbtc_oper/form_options.json until fresh=True.
+        """
+        path = self.session.state_dir / "form_options.json"
+        if self._form_options is None or fresh:
+            if path.is_file() and not fresh:
+                self._form_options = json.loads(path.read_text(encoding="utf-8"))
+            else:
+                add_form = self.session.get(DETAIL_PATH, [("fno", "add")], fresh=fresh)
+                options = parse.parse_form_options(add_form)
+                if not options["areas"]:
+                    raise NbtcError("no inspection form found at FF11Chk.aspx?fno=add")
+                self._form_options = options
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(options, ensure_ascii=False), encoding="utf-8")
+        return self._form_options
 
     def search(
         self,
@@ -209,6 +234,68 @@ class NbtcOper:
             prov, dist, sub = places.resolve(self.places(), province, district, subdistrict)
             filters.update(province_id=prov, district_id=dist, subdistrict_id=sub)
         return self._station_walk(filters, max_pages, fresh)
+
+    def find_stations(
+        self,
+        *,
+        province=None,
+        district=None,
+        subdistrict=None,
+        frequency=None,
+        name=None,
+        source=None,
+        limit: int = 25,
+        details: bool = False,
+        fresh: bool = False,
+    ) -> dict:
+        """Register stations as short summaries, shaped for a chat model's tool call.
+
+        Any of province / district / frequency / name narrows the search; at
+        least one is needed. A district without its province is looked up
+        across every province. frequency matches the portal's way: exactly,
+        in MHz. Stations whose frequency reads 0.0 are dropped. Summaries
+        carry no coordinates; details=True adds licence and operator, one
+        request per station shown.
+        -> {"total", "shown", "truncated", "complete", "stations"}
+        """
+        if not any(v not in (None, "") for v in (province, district, subdistrict, frequency, name)):
+            raise ValueError("find_stations needs a province, district, frequency or name")
+        if district and not province and not str(district).isdigit():
+            matches = places.provinces_with_district(self.places(), district)
+            if not matches:
+                raise places.UnknownPlace(f"district {district!r} not found")
+            if len(matches) > 1:
+                names = [self.places()["provinces"][p] for p in matches]
+                raise places.UnknownPlace(
+                    f"district {district!r} is in several provinces: {', '.join(names)}"
+                )
+            province = matches[0]
+        if frequency not in (None, ""):
+            frequency = f"{float(frequency):g}"  # the portal matches "91" but not "91.0"
+
+        result = self.station_search(
+            province=province,
+            district=district,
+            subdistrict=subdistrict,
+            frequency=frequency or "",
+            name=name or "",
+            source=source or "",
+            fresh=fresh,
+        )
+        rows = [r for r in result["rows"] if r.get("frequency_mhz") != 0.0]
+        rows.sort(key=lambda r: (r.get("frequency_mhz") is None, r.get("frequency_mhz") or 0, r.get("name") or ""))
+        shown = rows[:limit]
+        stations = [
+            parse.compact_station(r, self.station(r["stn_id"], fresh=fresh) if details else None)
+            for r in shown
+        ]
+        return {
+            "total": len(rows),
+            "shown": len(stations),
+            "truncated": len(stations) < len(rows),
+            "complete": result["complete"],
+            "stations": stations,
+        }
 
     def _station_walk(self, filters, max_pages, fresh) -> dict:
         """Walk the picker; if paging loses rows, re-ask one place level down.
