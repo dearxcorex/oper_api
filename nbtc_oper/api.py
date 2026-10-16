@@ -205,11 +205,23 @@ class NbtcOper:
         )
 
     def count_stations(self, *, fresh: bool = False, **filters) -> dict:
-        """Distinct stations among the matching inspections. Walks every page."""
+        """Distinct stations among the matching inspections. Walks every page.
+
+        inspections is the portal's own total, the number its search page shows.
+        by_result splits rows by OpinionDet (ตรงตามมาตรฐาน / ไม่ตรงตามมาตรฐาน);
+        pass result= to have the portal filter on it instead.
+        """
         result = self.search(fresh=fresh, **filters)
+        groups = {}
+        for row in result["rows"]:
+            groups.setdefault(row.get("result") or "", []).append(row)
         return {
             "inspections": result["total"],
             "stations": len({station_key(row) for row in result["rows"]}),
+            "by_result": {
+                name: {"inspections": len(rows), "stations": len({station_key(r) for r in rows})}
+                for name, rows in groups.items()
+            },
             "complete": result["complete"],
         }
 

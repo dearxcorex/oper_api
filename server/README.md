@@ -12,7 +12,11 @@ request, one at a time.
 |---|---|---|
 | `GET /health` | none | — never touches the portal |
 | `POST /find-stations` | bearer | `province`, `district`, `subdistrict`, `frequency`, `name`, `source`, `limit`, `details` |
-| `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district` |
+| `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district`, `result` |
+
+`/count-stations` answers `inspections` (the portal's own total), `stations`
+(distinct), and `by_result`: both counts per result. `result` is
+`ตรงตามมาตรฐาน` or `ไม่ตรงตามมาตรฐาน` and filters on the portal side.
 
 Errors come back as `{"error", "detail"}`: `cloudflare` 503, `login_failed` 502,
 `portal` 502, `unknown_place` / `bad_input` 400.

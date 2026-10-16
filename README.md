@@ -95,6 +95,7 @@ record keeps the untranslated portal fields under `raw`.
 - **Counts.** `--count` / `search(max_pages=1)["total"]` reads the portal's own total from page 1
   and counts inspections. `--count-stations` / `count_stations()` walks every
   page and counts distinct stations: by station code, or by name, frequency
-  and licence number for a row that has no code.
+  and licence number for a row that has no code. Its `by_result` splits both
+  counts by result (ตรงตามมาตรฐาน / ไม่ตรงตามมาตรฐาน); `result=` filters on the portal side.
 - **Scope.** The inspection search only lists stations somebody has inspected. `RegID=5`,
   `AreaID=8` (เขต 23) and `StnTypeID=4` (สถานีวิทยุกระจายเสียง) are defaults.

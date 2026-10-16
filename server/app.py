@@ -44,6 +44,7 @@ class CountStations(BaseModel):
     inspected_to: date
     province: str | None = None
     district: str | None = None
+    result: Literal["ตรงตามมาตรฐาน", "ไม่ตรงตามมาตรฐาน"] | None = None  # the portal's OpinionDet
 
 
 def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
@@ -110,6 +111,7 @@ def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
                 inspected_to=body.inspected_to.isoformat(),
                 province=body.province,
                 district=body.district,
+                result=body.result,
             )
         return {
             **result,

@@ -24,7 +24,7 @@ class FakeApi:
         self.calls.append(("count_stations", kwargs))
         if self.error:
             raise self.error
-        return {"inspections": 126, "stations": 122, "complete": True}
+        return {"inspections": 126, "stations": 122, "by_result": {}, "complete": True}
 
 
 @pytest.fixture
@@ -86,13 +86,29 @@ def test_count_stations_echoes_the_date_range(make_client):
         "inspected_from": "2026-01-01", "inspected_to": "2026-10-15", "province": "ชัยภูมิ",
     })
     assert res.json() == {
-        "inspections": 126, "stations": 122, "complete": True,
+        "inspections": 126, "stations": 122, "by_result": {}, "complete": True,
         "inspected_from": "2026-01-01", "inspected_to": "2026-10-15",
     }
     assert api.calls == [("count_stations", {
         "inspected_from": "2026-01-01", "inspected_to": "2026-10-15",
-        "province": "ชัยภูมิ", "district": None,
+        "province": "ชัยภูมิ", "district": None, "result": None,
     })]
+
+
+def test_count_stations_passes_the_result_filter(make_client):
+    api = FakeApi()
+    res = make_client(api).post("/count-stations", headers=AUTH, json={
+        "inspected_from": "2026-01-01", "inspected_to": "2026-10-16", "result": "ตรงตามมาตรฐาน",
+    })
+    assert res.status_code == 200
+    assert api.calls[0][1]["result"] == "ตรงตามมาตรฐาน"
+
+
+def test_count_stations_rejects_an_unknown_result(make_client):
+    res = make_client(FakeApi()).post("/count-stations", headers=AUTH, json={
+        "inspected_from": "2026-01-01", "inspected_to": "2026-10-16", "result": "ผ่าน",
+    })
+    assert res.status_code == 422
 
 
 def test_count_stations_rejects_a_backwards_range(make_client):
