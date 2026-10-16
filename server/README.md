@@ -49,7 +49,7 @@ OPER_API_TOKEN=dev uv run --group server uvicorn server.app:app --host 127.0.0.1
 
 ## Raspberry Pi setup
 
-64-bit Raspberry Pi OS, user `deardevx`.
+64-bit Raspberry Pi OS, user `raspi`.
 
 ```bash
 sudo apt update && sudo apt install -y git curl

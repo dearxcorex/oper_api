@@ -3,6 +3,7 @@
 # Run on the Pi from the repo root: ./server/deploy.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export PATH="$HOME/.local/bin:$PATH"  # uv; a non-interactive ssh shell lacks it
 
 git pull --ff-only
 uv sync --frozen --group server

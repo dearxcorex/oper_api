@@ -1,17 +1,17 @@
 # systemd unit for the nbtc-oper HTTP wrapper on the Raspberry Pi.
 # Install: sudo cp server/oper-api.service /etc/systemd/system/ && sudo systemctl enable --now oper-api
-# Paths assume the user deardevx with the repo cloned to ~/oper_api.
+# Paths assume the user raspi with the repo cloned to ~/oper_api.
 [Unit]
 Description=nbtc-oper HTTP wrapper (fmr.nbtc.go.th OPER portal)
 Wants=network-online.target
 After=network-online.target
 
 [Service]
-User=deardevx
-WorkingDirectory=/home/deardevx/oper_api
+User=raspi
+WorkingDirectory=/home/raspi/oper_api
 # NBTC_USERNAME, NBTC_PASSWORD and OPER_API_TOKEN; chmod 600
-EnvironmentFile=/home/deardevx/.config/oper-api/env
-ExecStart=/home/deardevx/.local/bin/uv run --frozen --group server uvicorn server.app:app --host 127.0.0.1 --port 8787
+EnvironmentFile=/home/raspi/.config/oper-api/env
+ExecStart=/home/raspi/.local/bin/uv run --frozen --group server uvicorn server.app:app --host 127.0.0.1 --port 8787
 Restart=on-failure
 RestartSec=5
 

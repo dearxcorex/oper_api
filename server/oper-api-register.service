@@ -9,7 +9,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-User=deardevx
-WorkingDirectory=/home/deardevx/oper_api
-EnvironmentFile=/home/deardevx/.config/oper-api/env
-ExecStart=/home/deardevx/.local/bin/uv run --frozen python -m nbtc_oper register
+User=raspi
+WorkingDirectory=/home/raspi/oper_api
+EnvironmentFile=/home/raspi/.config/oper-api/env
+ExecStart=/home/raspi/.local/bin/uv run --frozen python -m nbtc_oper register
