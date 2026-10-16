@@ -64,7 +64,8 @@ record keeps the untranslated portal fields under `raw`.
   and signs in again once if a response redirects to `Login.aspx`.
 - **Pace.** One request at a time, at least 1.5 s apart.
 - **Cache.** Responses are reused for 15 minutes (`.nbtc_oper/cache/`);
-  `--fresh` / `fresh=True` bypasses it.
+  `--fresh` / `fresh=True` bypasses it. Expired entries are deleted, at most
+  once every 15 minutes when a new one is written.
 - **Paging.** `search()` walks every page and dedupes on `chk_id`. If it ends
   up short of the portal's own total it re-walks, up to 3 passes, and reports
   `complete`.

@@ -51,6 +51,7 @@ class Session:
         self.state_dir = Path(state_dir) if state_dir else config.state_dir()
         self.requests_sent = 0
         self._last_request = 0.0
+        self._last_sweep = 0.0
         self._http = cffi.Session(impersonate="chrome")
         self._load_cookies()
 
@@ -142,7 +143,22 @@ class Session:
             path.write_text(
                 json.dumps({"fetched_at": time.time(), "text": text}), encoding="utf-8"
             )
+            self._sweep_cache(path.parent)
         return text
+
+    def _sweep_cache(self, cache_dir: Path) -> None:
+        """Delete entries past cache_ttl: they are never read again. Runs at most
+        once per cache_ttl, so a rebuild's thousands of writes don't each list the dir."""
+        now = time.time()
+        if now - self._last_sweep < self.cache_ttl:
+            return
+        self._last_sweep = now
+        for entry in cache_dir.glob("*.json"):
+            try:
+                if now - entry.stat().st_mtime >= self.cache_ttl:
+                    entry.unlink()
+            except FileNotFoundError:
+                pass  # another session swept it first
 
     def _cookie_file(self) -> Path:
         return self.state_dir / "cookies.json"
