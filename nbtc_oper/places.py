@@ -10,6 +10,13 @@ import re
 DPV_PATH = "/Oper/_inc/js/dpv.js"
 _PREFIXES = ("จ.", "อ.", "ต.", "เขต", "แขวง")
 OFFICE_PROVINCES = ("30", "36")  # นครราชสีมา, ชัยภูมิ: the office's; เขต 23 also has บุรีรัมย์
+# What people call a province -> the portal's name for it.
+PROVINCE_ALIASES = {
+    "โคราช": "นครราชสีมา",
+    "กรุงเทพ": "กรุงเทพมหานคร",
+    "กทม": "กรุงเทพมหานคร",
+    "กทม.": "กรุงเทพมหานคร",
+}
 
 
 class UnknownPlace(ValueError):
@@ -45,14 +52,15 @@ def bare(name: str) -> str:
     return name
 
 
-def _lookup(value, options: dict, what: str) -> str:
-    """A code passes through; a Thai name (prefix optional) is resolved."""
+def _lookup(value, options: dict, what: str, aliases: dict = {}) -> str:
+    """A code passes through; a Thai name (prefix optional, or an alias) is resolved."""
     if value in (None, "", 0, "0"):
         return "0"
     text = str(value).strip()
     if text.isdigit():
         return text
-    matches = [code for code, name in options.items() if bare(name) == bare(text)]
+    wanted = bare(aliases.get(bare(text), text))
+    matches = [code for code, name in options.items() if bare(name) == wanted]
     if len(matches) != 1:
         raise UnknownPlace(f"{what} {text!r} not found")
     return matches[0]
@@ -69,7 +77,7 @@ def provinces_with_district(places: dict, district) -> list[str]:
 
 def resolve(places: dict, province=None, district=None, subdistrict=None) -> tuple[str, str, str]:
     """-> (sProv1, sAumphoe1, sTambol1) values for the search form."""
-    prov = _lookup(province, places["provinces"], "province")
+    prov = _lookup(province, places["provinces"], "province", PROVINCE_ALIASES)
     if prov == "0" and (district or subdistrict) and not str(district or subdistrict).isdigit():
         raise UnknownPlace("a district or sub-district name needs its province")
     dist = _lookup(district, places["districts"].get(prov, {}), "district")
@@ -83,10 +91,16 @@ def resolve_loose(places: dict, province=None, district=None, subdistrict=None) 
     """resolve(), but a district named without its province is looked up in every province.
 
     A name found in several provinces goes to the office's (OFFICE_PROVINCES)
-    when exactly one of them has it.
+    when exactly one of them has it. A name no district has but a province
+    does (e.g. โคราช) is taken as the province.
     """
     if district and not province and not str(district).isdigit():
         matches = provinces_with_district(places, district)
+        if not matches and not subdistrict:
+            try:
+                return resolve(places, district)
+            except UnknownPlace:
+                pass
         if not matches:
             raise UnknownPlace(f"district {district!r} not found")
         if len(matches) > 1:

@@ -281,6 +281,19 @@ def test_places_resolve_names_with_or_without_prefix(gazetteer):
     assert places.resolve(gazetteer, "กรุงเทพมหานคร", "คลองเตย")[1] == "1033"
 
 
+def test_places_resolve_common_province_names(gazetteer):
+    assert places.resolve(gazetteer, "โคราช") == ("30", "0", "0")
+    assert places.resolve(gazetteer, "จ.โคราช") == ("30", "0", "0")
+    assert places.resolve_loose(gazetteer, "โคราช")[0] == "30"
+
+
+def test_province_given_as_district_is_taken_as_the_province(gazetteer):
+    assert places.resolve_loose(gazetteer, district="โคราช") == ("30", "0", "0")
+    assert places.resolve_loose(gazetteer, district="ชัยภูมิ") == ("36", "0", "0")
+    with pytest.raises(places.UnknownPlace):
+        places.resolve_loose(gazetteer, district="ไม่มีจริง")
+
+
 def test_district_alone_finds_its_province(gazetteer):
     provinces = places.provinces_with_district(gazetteer, "อ.ภูเขียว")
     assert [gazetteer["provinces"][p] for p in provinces] == ["จ.ชัยภูมิ"]

@@ -24,7 +24,7 @@ FIND_STATIONS_TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "province": {"type": "string", "description": "Province, e.g. ชัยภูมิ"},
+            "province": {"type": "string", "description": "Province, e.g. ชัยภูมิ; โคราช means นครราชสีมา"},
             "district": {"type": "string", "description": "District (อำเภอ), e.g. ภูเขียว"},
             "subdistrict": {"type": "string", "description": "Sub-district (ตำบล); needs district"},
             "frequency": {
@@ -65,7 +65,7 @@ COUNT_INSPECTIONS_TOOL = {
         "properties": {
             "inspected_from": {"type": "string", "description": "First day, YYYY-MM-DD (CE)"},
             "inspected_to": {"type": "string", "description": "Last day, YYYY-MM-DD (CE)"},
-            "province": {"type": "string", "description": "Province, e.g. ชัยภูมิ"},
+            "province": {"type": "string", "description": "Province, e.g. ชัยภูมิ; โคราช means นครราชสีมา"},
             "district": {"type": "string", "description": "District (อำเภอ), e.g. ภูเขียว"},
             "result": {
                 "type": "string",
