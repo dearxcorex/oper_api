@@ -54,6 +54,7 @@ class CountStations(BaseModel):
     province: str | None = None
     district: str | None = None
     result: Literal["ตรงตามมาตรฐาน", "ไม่ตรงตามมาตรฐาน"] | None = None  # the portal's OpinionDet
+    limit: int = Field(25, ge=1, le=100)  # stations named in station_list
 
 
 def create_app(
@@ -162,6 +163,7 @@ def create_app(
                 province=body.province,
                 district=body.district,
                 result=body.result,
+                limit=body.limit,
             )
         return {
             **result,

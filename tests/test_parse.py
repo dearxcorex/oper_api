@@ -246,6 +246,27 @@ def test_find_stations_tool_maps_onto_find_stations():
     assert set(FIND_STATIONS_TOOL["input_schema"]["properties"]) <= set(params)
 
 
+def test_count_inspections_tool_maps_onto_count_stations():
+    import inspect
+    from nbtc_oper import NbtcOper, build_query
+    from nbtc_oper.llm import COUNT_INSPECTIONS_TOOL
+
+    params = {*inspect.signature(build_query).parameters, *inspect.signature(NbtcOper.count_stations).parameters}
+    params |= {"province", "district"}  # resolved by search() before build_query
+    assert set(COUNT_INSPECTIONS_TOOL["input_schema"]["properties"]) <= params
+
+
+def test_run_tool_dispatches_count_oper_inspections():
+    from nbtc_oper.llm import run_tool
+
+    class Api:
+        def count_stations(self, **kwargs):
+            return kwargs
+
+    args = {"inspected_from": "2026-01-01", "inspected_to": "2026-10-16", "result": "ไม่ตรงตามมาตรฐาน"}
+    assert run_tool(Api(), "count_oper_inspections", args) == args
+
+
 # ---------- places ----------
 
 @pytest.fixture(scope="module")

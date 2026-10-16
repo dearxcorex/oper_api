@@ -208,14 +208,23 @@ class NbtcOper:
             SEARCH_PATH, build_query(**filters), parse.parse_search_page, "chk_id", max_pages, fresh
         )
 
-    def count_stations(self, *, fresh: bool = False, **filters) -> dict:
+    def count_stations(self, *, limit: int = 25, fresh: bool = False, **filters) -> dict:
         """Distinct stations among the matching inspections. Walks every page.
 
         inspections is the portal's own total, the number its search page shows.
         by_result splits rows by OpinionDet (ตรงตามมาตรฐาน / ไม่ตรงตามมาตรฐาน);
-        pass result= to have the portal filter on it instead.
+        pass result= to have the portal filter on it instead. station_list names
+        up to limit of the stations, latest inspection first, each with what
+        that inspection found and how many times the station was inspected.
         """
         result = self.search(fresh=fresh, **filters)
+        latest, times = {}, {}
+        for row in result["rows"]:
+            key = station_key(row)
+            times[key] = times.get(key, 0) + 1
+            if key not in latest or (row.get("inspected_date") or "") > (latest[key].get("inspected_date") or ""):
+                latest[key] = row
+        listed = sorted(latest.items(), key=lambda kv: kv[1].get("inspected_date") or "", reverse=True)
         groups = {}
         for row in result["rows"]:
             groups.setdefault(row.get("result") or "", []).append(row)
@@ -227,6 +236,10 @@ class NbtcOper:
                 for name, rows in groups.items()
             },
             "complete": result["complete"],
+            "station_list": [
+                parse.compact_inspection(row, times[key]) for key, row in listed[:limit]
+            ],
+            "truncated": len(listed) > limit,
         }
 
     def station_search(

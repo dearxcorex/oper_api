@@ -239,6 +239,30 @@ def split_location(location: str | None) -> dict:
     return out
 
 
+def compact_inspection(row: dict, inspections: int = 1) -> dict:
+    """An inspection-search row -> a short station summary for a chat model.
+
+    No raw portal fields. inspections is how many matching inspections the
+    station had; the rest comes from the one row given (its latest).
+    """
+    return {
+        "station_name": row.get("station_name"),
+        "frequency_mhz": row.get("frequency_mhz"),
+        "station_code": row.get("station_code"),
+        "licence_no": row.get("licence_no"),
+        "subdistrict": row.get("subdistrict"),
+        "district": row.get("district"),
+        "province": row.get("province"),
+        "location": row.get("location"),
+        "inspected_date": row.get("inspected_date"),
+        "result": row.get("result"),
+        "warning_doc_no": row.get("warning_doc_no"),
+        "warning_doc_date": row.get("warning_doc_date"),
+        "chk_id": row.get("chk_id"),
+        "inspections": inspections,
+    }
+
+
 def compact_station(row: dict, record: dict | None = None) -> dict:
     """A station-search row (plus its dSTN record, if fetched) -> a short summary.
 

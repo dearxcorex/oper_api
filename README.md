@@ -49,8 +49,9 @@ api.find_stations(district="ภูเขียว", source="BCS")   # short summ
 api.find_stations(frequency=91.75, details=True)     # + licence, expiry, operator
 ```
 
-`nbtc_oper.llm` holds the same search as a tool definition in the Anthropic
-Messages format (`FIND_STATIONS_TOOL`, `TOOLS`) and `run_tool(api, name, input)`
+`nbtc_oper.llm` holds the station search and the inspection count (with its
+station list) as tool definitions in the Anthropic Messages format
+(`FIND_STATIONS_TOOL`, `COUNT_INSPECTIONS_TOOL`, `TOOLS`) and `run_tool(api, name, input)`
 to dispatch a call.
 
 Dates are ISO in and out; the portal's Buddhist-era `dd/mm/yyyy` is converted

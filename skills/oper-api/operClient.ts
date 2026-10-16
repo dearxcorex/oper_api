@@ -32,6 +32,7 @@ export interface CountStationsRequest {
   province?: string;
   district?: string;
   result?: OperResult;
+  limit?: number;
 }
 
 /** Private fields: lat, lng and contact_* never go to an external model. */
@@ -73,11 +74,31 @@ export interface ResultCount {
   stations: number;
 }
 
+/** One station among the counted inspections, from its latest one. */
+export interface InspectedStation {
+  station_name: string | null;
+  frequency_mhz: number | null;
+  station_code: string | null;
+  licence_no: string | null;
+  subdistrict: string | null;
+  district: string | null;
+  province: string | null;
+  location: string | null;
+  inspected_date: string | null;
+  result: string | null;
+  warning_doc_no: string | null;
+  warning_doc_date: string | null;
+  chk_id: number | null;
+  inspections: number;
+}
+
 export interface CountStationsResponse {
   inspections: number;
   stations: number;
   by_result: Record<string, ResultCount>;
   complete: boolean;
+  station_list: InspectedStation[];
+  truncated: boolean;
   inspected_from: string;
   inspected_to: string;
 }

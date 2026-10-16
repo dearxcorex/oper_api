@@ -14,7 +14,7 @@ than fan them out.
 |---|---|---|
 | `GET /health` | none | — never touches the portal; answers `ok`, `as_of` (the saved register's build time, or null) and `refreshing` |
 | `POST /find-stations` | bearer | `province`, `district`, `subdistrict`, `frequency`, `name`, `source`, `limit`, `details` |
-| `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district`, `result` |
+| `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district`, `result`, `limit` |
 | `POST /refresh` | bearer | — starts a register rebuild in the background: 202, or 409 `busy` if one is already running |
 
 Bearer means `Authorization: Bearer $OPER_API_TOKEN`. Unknown body fields are
@@ -60,7 +60,11 @@ portal's blanks and zeros come back as null).
 This counts inspections between two dates, inclusive. `inspections` is the
 portal's own total, the number its search page shows. `stations` is the
 number of distinct stations among those inspections. `by_result` splits both
-counts by result. `result` filters on the portal side. Every page is walked,
+counts by result. `result` filters on the portal side. `station_list` names
+up to `limit` (default 25, max 100) of those stations, latest inspection
+first: name, frequency, code, licence, place, that inspection's date, result
+and warning document, and `inspections`, how many times it was inspected in
+the range. `truncated` says some stations were left out. Every page is walked,
 so a long date range can take longer than the 30 s client timeout; narrow the
 dates when it does.
 

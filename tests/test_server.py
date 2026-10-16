@@ -154,7 +154,7 @@ def test_count_stations_echoes_the_date_range(make_client):
     }
     assert api.calls == [("count_stations", {
         "inspected_from": "2026-01-01", "inspected_to": "2026-10-15",
-        "province": "ชัยภูมิ", "district": None, "result": None,
+        "province": "ชัยภูมิ", "district": None, "result": None, "limit": 25,
     })]
 
 
