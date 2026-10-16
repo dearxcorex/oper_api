@@ -93,12 +93,12 @@ record keeps the untranslated portal fields under `raw`.
   station is a short summary (place split into sub-district/district/province)
   with no coordinates and no `raw`; `limit` caps how many come back while
   `total` still counts them all.
-- **Saved register.** `register.build(api)` walks the station register once per
-  data source across the area (the per-source totals add up to more than the
-  unfiltered total, so one unfiltered walk misses stations; walks by province
+- **Saved register.** `register.build(api)` walks the station register for the
+  BCS data source only (`register.SOURCES`) across the area (walks by province
   come back short), dedupes on StnID and fetches each station's record for its
-  PATCode, licence and operator. Only นครราชสีมา and ชัยภูมิ are kept
-  (`register.PROVINCES`); a station whose address names another province, such
+  PATCode, licence and operator. `find_stations` and the copy both default to
+  BCS; a search for another source goes to the portal. Only นครราชสีมา and
+  ชัยภูมิ are kept (`places.OFFICE_PROVINCES`); a station whose address names another province, such
   as เขต 23's บุรีรัมย์, is dropped before its record is fetched. A walk that
   comes back incomplete fails the build. `register.find(copy, api.places(), …)` is
   `find_stations()` over that copy, with no portal requests and an `as_of`.

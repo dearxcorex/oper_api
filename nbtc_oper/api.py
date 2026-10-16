@@ -15,6 +15,8 @@ STATION_SEARCH_PATH = "/Oper/ISO/STN/mStnSch.aspx"
 
 # A result set that pages unstably is re-walked until every row is seen.
 MAX_PASSES = 3
+# find_stations' data source (SrcData) when none is asked for.
+DEFAULT_SOURCE = "BCS"
 
 
 def build_query(
@@ -272,7 +274,8 @@ class NbtcOper:
         (places.OFFICE_PROVINCES: นครราชสีมา, ชัยภูมิ) are searched, one walk
         each, and the result names them in `provinces`. A district without
         its province is looked up across every province, the office's first. frequency matches the portal's way: exactly,
-        in MHz. Stations whose frequency reads 0.0 are dropped. Summaries
+        in MHz. source defaults to DEFAULT_SOURCE (BCS). Stations whose
+        frequency reads 0.0 are dropped. Summaries
         carry no coordinates; details=True adds licence and operator, one
         request per station shown. With time_limit (seconds), the walk stops
         asking once it runs out and returns what it saw: complete is False and
@@ -303,7 +306,7 @@ class NbtcOper:
                 subdistrict=subdistrict,
                 frequency=frequency or "",
                 name=name or "",
-                source=source or "",
+                source=source or DEFAULT_SOURCE,
                 fresh=fresh,
                 deadline=share,
             ))

@@ -26,11 +26,11 @@ def station(stn_id, freq, source, pat_code, name="สถานี", location=Non
 def copy():
     return {
         "built_at": "2026-10-16T03:00:00+00:00",
-        "counts": {},
+        "counts": {"BCS": 4},
         "stations": [
             station(1, 98.5, "BCS", "360101"),
             station(2, 91.0, "BCS2", "360101"),
-            station(3, 92.25, "OPER", "360403", name="คนรักสุขภาพ"),
+            station(3, 92.25, "BCS", "360403", name="คนรักสุขภาพ"),
             station(4, 0.0, "BCS", "360101"),
             station(5, 89.0, "BCS", None, location="1 ต.ในเมือง อ.เมืองชัยภูมิ จ.ชัยภูมิ"),
         ],
@@ -43,14 +43,21 @@ def ids(result):
 
 def test_source_matches_exactly(copy, gazetteer):
     result = register.find(copy, gazetteer, province="ชัยภูมิ", source="BCS")
-    assert ids(result) == [5, 1]  # not BCS2, not 0.0 MHz; by frequency
-    assert (result["total"], result["complete"], result["as_of"]) == (2, True, copy["built_at"])
+    assert ids(result) == [5, 3, 1]  # not BCS2, not 0.0 MHz; by frequency
+    assert (result["total"], result["complete"], result["as_of"]) == (3, True, copy["built_at"])
+    assert ids(register.find(copy, gazetteer, province="ชัยภูมิ", source="BCS2")) == [2]
+
+
+def test_no_source_means_bcs(copy, gazetteer):
+    assert ids(register.find(copy, gazetteer, province="ชัยภูมิ")) == [5, 3, 1]
+    assert register.covers(copy, gazetteer, province="ชัยภูมิ")
+    assert not register.covers(copy, gazetteer, province="ชัยภูมิ", source="BCS2")  # not walked
 
 
 def test_places_match_by_pat_code_and_fall_back_to_the_address(copy, gazetteer):
     assert ids(register.find(copy, gazetteer, district="เกษตรสมบูรณ์")) == [3]
     assert ids(register.find(copy, gazetteer, province="ชัยภูมิ", district="เมืองชัยภูมิ",
-                             subdistrict="ในเมือง")) == [5, 2, 1]
+                             subdistrict="ในเมือง")) == [5, 1]
 
 
 def test_frequency_is_exact_and_name_is_a_substring(copy, gazetteer):
@@ -69,7 +76,7 @@ def test_details_only_when_asked_and_never_coordinates_or_codes(copy, gazetteer)
 
 def test_limit_truncates(copy, gazetteer):
     result = register.find(copy, gazetteer, province="ชัยภูมิ", limit=1)
-    assert (result["total"], result["shown"], result["truncated"]) == (4, 1, True)
+    assert (result["total"], result["shown"], result["truncated"]) == (3, 1, True)
 
 
 class FakePortal:
@@ -109,7 +116,7 @@ class FakePortal:
 
 
 def test_build_dedupes_across_sources_and_tries_the_other_login():
-    copy = register.build(FakePortal(), log=lambda _: None)
+    copy = register.build(FakePortal(), sources=("WEB", "BCS", "BCS2"), log=lambda _: None)
     assert copy["counts"]["BCS"] == 4
     assert sorted(s["stn_id"] for s in copy["stations"]) == [9, 10]
     assert all(s["pat_code"] == "360101" and "lat" not in s for s in copy["stations"])
@@ -137,7 +144,7 @@ def test_the_copy_covers_only_its_provinces(copy, gazetteer):
 
 def test_build_refuses_an_incomplete_source():
     with pytest.raises(NbtcError, match="BCS2"):
-        register.build(FakePortal(incomplete="BCS2"), log=lambda _: None)
+        register.build(FakePortal(incomplete="BCS2"), sources=("BCS", "BCS2"), log=lambda _: None)
 
 
 def test_save_and_load_round_trip(tmp_path, copy):
@@ -152,7 +159,7 @@ def test_rebuild_keeps_the_last_good_copy_when_the_build_fails(tmp_path, copy):
     path = tmp_path / "register.json"
     register.save(copy, path)
     with pytest.raises(NbtcError):
-        register.rebuild(FakePortal(incomplete="BCS2"), path, log=lambda _: None)
+        register.rebuild(FakePortal(incomplete="BCS"), path, log=lambda _: None)
     assert register.load(path) == copy
     register.rebuild(FakePortal(), path, log=lambda _: None)  # the lock was let go
     assert register.load(path)["counts"]["BCS"] == 4

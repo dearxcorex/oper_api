@@ -26,7 +26,7 @@ count, and `details` is capped at 10.
 
 The copy is rebuilt every night at 03:00 by `oper-api-register.timer`, or on
 demand with `POST /refresh` (about 30 minutes either way). A lock file keeps the
-two from running at once. A build where any data source comes back incomplete
+two from running at once. Only the BCS data source is saved. A build whose walk comes back incomplete
 fails and leaves the previous copy in place; the timer's failures show in
 `journalctl -u oper-api-register`, a refresh's in `journalctl -u oper-api`.
 A refresh uses its own portal login, so questions keep being answered while it
