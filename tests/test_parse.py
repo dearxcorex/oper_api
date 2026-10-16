@@ -226,11 +226,13 @@ def test_split_location_takes_the_last_place_named():
     assert parse.split_location(None) == {"subdistrict": None, "district": None, "province": None}
 
 
-def test_compact_station_has_no_coordinates_or_raw():
+def test_compact_station_has_no_raw_and_coordinates_only_from_the_record():
     row = parse.parse_station_search_page(fixture("station_search_page.html"))["rows"][0]
     record = parse.shape_station(json.loads(fixture("station.json")))
     out = parse.compact_station(row, record)
-    assert "raw" not in out and "lat" not in out and "lng" not in out
+    assert "raw" not in out and (out["lat"], out["lng"]) == (16.12671, 101.897369)
+    assert "lat" not in parse.compact_station(row)
+    assert parse.compact_station(row, {**record, "lat": 0, "lng": ""})["lat"] is None
     assert out["stn_id"] == row["stn_id"]
     assert {"licence_no", "operator", "district", "province"} <= out.keys()
 

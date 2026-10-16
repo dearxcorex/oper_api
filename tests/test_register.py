@@ -66,12 +66,14 @@ def test_frequency_is_exact_and_name_is_a_substring(copy, gazetteer):
     assert ids(register.find(copy, gazetteer, name="รักสุข")) == [3]
 
 
-def test_details_only_when_asked_and_never_coordinates_or_codes(copy, gazetteer):
+def test_details_only_when_asked_coordinates_always_and_never_codes(copy, gazetteer):
+    copy["stations"][0].update(lat=15.8, lng=102.0)
     plain = register.find(copy, gazetteer, frequency=98.5)["stations"][0]
     full = register.find(copy, gazetteer, frequency=98.5, details=True)["stations"][0]
     assert "licence_no" not in plain and full["licence_no"] == "B1"
     for out in (plain, full):
-        assert not {"lat", "lng", "pat_code", "raw"} & out.keys()
+        assert (out["lat"], out["lng"]) == (15.8, 102.0)
+        assert not {"pat_code", "raw"} & out.keys()
 
 
 def test_limit_truncates(copy, gazetteer):
@@ -144,7 +146,8 @@ def test_build_dedupes_across_sources_and_tries_the_other_login():
     copy = register.build(FakePortal(), sources=("WEB", "BCS", "BCS2"), log=lambda _: None)
     assert copy["counts"]["BCS"] == 4
     assert sorted(s["stn_id"] for s in copy["stations"]) == [9, 10]
-    assert all(s["pat_code"] == "360101" and "lat" not in s for s in copy["stations"])
+    assert all(s["pat_code"] == "360101" for s in copy["stations"])
+    assert all((s["lat"], s["lng"]) == (15.0, 102.0) for s in copy["stations"])
 
 
 def test_build_takes_each_stations_phone_from_its_latest_inspection_that_has_one():

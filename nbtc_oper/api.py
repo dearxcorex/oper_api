@@ -275,9 +275,8 @@ class NbtcOper:
         each, and the result names them in `provinces`. A district without
         its province is looked up across every province, the office's first. frequency matches the portal's way: exactly,
         in MHz. source defaults to DEFAULT_SOURCE (BCS). Stations whose
-        frequency reads 0.0 are dropped. Summaries
-        carry no coordinates; details=True adds licence and operator, one
-        request per station shown. With time_limit (seconds), the walk stops
+        frequency reads 0.0 are dropped. details=True adds licence, operator
+        and coordinates (lat, lng), one request per station shown. With time_limit (seconds), the walk stops
         asking once it runs out and returns what it saw: complete is False and
         total is the portal's own count when it showed one. A request already
         sent still finishes, so the call can run one request past the limit.

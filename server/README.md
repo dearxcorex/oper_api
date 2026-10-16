@@ -5,7 +5,7 @@ fm-station-tracker's Discord `/ask` bot. It runs on a Raspberry Pi at home and
 is reached through Tailscale Funnel: Cloudflare challenges the portal from cloud
 IPs (a Vercel deploy got HTTP 403 on every request), but lets a home IP through.
 
-Read-only, and never returns coordinates. One portal session serves every
+Read-only. One portal session serves every
 request, one at a time.
 
 | Route | Auth | Body |
@@ -20,7 +20,7 @@ and it covers the province asked about (นครราชสีมา and ช�
 no place gets those two, named in `provinces`). The copy holds BCS
 stations, deduped on StnID, with each station's licence and operator, so
 `details` is free; every station also carries `contact_name` and
-`contact_phone` from its latest inspection and the reply carries `as_of` (the build time). Otherwise the
+`contact_phone` from its latest inspection and `lat`/`lng` from its record, and the reply carries `as_of` (the build time). Otherwise the
 portal is walked live for at most 20 seconds (the bot gives a tool call about
 30): a walk cut short answers `complete: false`, with `total` the portal's own
 count, and `details` is capped at 10.

@@ -242,7 +242,8 @@ def split_location(location: str | None) -> dict:
 def compact_station(row: dict, record: dict | None = None) -> dict:
     """A station-search row (plus its dSTN record, if fetched) -> a short summary.
 
-    For a chat model: no raw portal fields and no coordinates.
+    For a chat model: no raw portal fields. The record adds the licence,
+    the operator and the coordinates (lat, lng).
     """
     out = {
         "stn_id": row["stn_id"],
@@ -262,7 +263,18 @@ def compact_station(row: dict, record: dict | None = None) -> dict:
         out["operator"] = (record.get("operator") or "").strip() or None
         out["nbtc_code"] = record.get("nbtc_code")
         out["station_id"] = record.get("station_id")
+        out["lat"] = _coordinate(record.get("lat"))
+        out["lng"] = _coordinate(record.get("lng"))
     return out
+
+
+def _coordinate(value):
+    """A degree value, or None for the portal's blanks and zeros."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number or None
 
 
 def parse_detail_page(html: str, chk_id: int) -> dict:

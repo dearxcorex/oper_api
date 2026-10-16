@@ -91,7 +91,7 @@ record keeps the untranslated portal fields under `raw`.
   district alone is looked up across every province; frequency is the portal's
   exact match in MHz; stations whose frequency reads 0.0 are dropped. Each
   station is a short summary (place split into sub-district/district/province)
-  with no coordinates and no `raw`; `limit` caps how many come back while
+  with no `raw` (`details` adds licence, operator and `lat`/`lng`); `limit` caps how many come back while
   `total` still counts them all.
 - **Saved register.** `register.build(api)` walks the station register for the
   BCS data source only (`register.SOURCES`) across the area (walks by province
@@ -99,8 +99,8 @@ record keeps the untranslated portal fields under `raw`.
   PATCode, licence and operator. The register has no phone numbers for BCS
   stations, so the build also walks the provinces' inspections and keeps each
   station's contact name and phone from its latest inspection that has one
-  (`contact_name`, `contact_phone`, `contact_date`); these show on every summary
-  from the copy, without `details`. `find_stations` and the copy both default to
+  (`contact_name`, `contact_phone`, `contact_date`); these and the record's
+  coordinates (`lat`, `lng`) show on every summary from the copy, without `details`. `find_stations` and the copy both default to
   BCS; a search for another source goes to the portal. Only นครราชสีมา and
   ชัยภูมิ are kept (`places.OFFICE_PROVINCES`); a station whose address names another province, such
   as เขต 23's บุรีรัมย์, is dropped before its record is fetched. A walk that

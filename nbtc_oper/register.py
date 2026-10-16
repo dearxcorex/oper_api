@@ -7,10 +7,10 @@ to more than the unfiltered total, so the unfiltered walk can't be trusted to
 see every station. Only BCS is kept; a search for another source is not
 covered and goes to the portal. Only the office's provinces are kept (places.OFFICE_PROVINCES); a search
 elsewhere is not covered and goes to the portal. Each station's dSTN record supplies its place codes (PATCode) and the
-licence and operator that find_stations' details=True shows. The register has
+licence and operator that find_stations' details=True shows, and its
+coordinates (lat, lng), which show on every summary. The register has
 no phone numbers for BCS stations; each station's contact name and phone come
-from its latest inspection form instead, and are shown on every summary. No
-coordinates are kept.
+from its latest inspection form instead, and are shown on every summary too.
 
 rebuild() is build() then save(), under a lock file so the monthly timer and an
 on-demand refresh never run at once; a build that fails leaves the last good
@@ -191,7 +191,7 @@ def _entry(row: dict, record: dict | None) -> dict:
     pat = str((record or {}).get("pat_code") or "").strip()
     entry["pat_code"] = pat if len(pat) == 6 and pat.isdigit() else None
     if record is None:
-        entry.update(dict.fromkeys(DETAIL_KEYS))
+        entry.update(dict.fromkeys(DETAIL_KEYS + ("lat", "lng")))
     return entry
 
 

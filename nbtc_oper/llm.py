@@ -13,10 +13,12 @@ FIND_STATIONS_TOOL = {
         "district, frequency or name. Thai place names, with or without the จ./อ./ต. "
         "prefix. With no place given, only นครราชสีมา and ชัยภูมิ are searched. A "
         "district alone is enough; a name shared with another province means the one in "
-        "นครราชสีมา or ชัยภูมิ. Returns short summaries without coordinates; total counts "
+        "นครราชสีมา or ชัยภูมิ. Returns short summaries; total counts "
         "every match, shown how many came back. When the answer comes from the saved "
         "register (as_of is set), each station has contact_name and contact_phone from its "
-        "latest inspection (contact_date), or null when it was never inspected."
+        "latest inspection (contact_date), or null when it was never inspected, and lat/lng "
+        "(the register's coordinates, null when it has none); a live answer carries lat/lng "
+        "only with details."
     ),
     "input_schema": {
         "type": "object",
@@ -37,7 +39,7 @@ FIND_STATIONS_TOOL = {
             "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 25},
             "details": {
                 "type": "boolean",
-                "description": "Add licence number, expiry and operator (slower: one request per station)",
+                "description": "Add licence number, expiry, operator and coordinates (slower when live: one request per station)",
                 "default": False,
             },
         },

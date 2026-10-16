@@ -1,8 +1,8 @@
 """HTTP wrapper around NbtcOper for fm-station-tracker's Discord /ask bot.
 
 Runs on a home machine because Cloudflare challenges the portal from cloud IPs
-(Vercel included), and is reached through Tailscale Funnel. Read-only, and
-never returns coordinates: only find_stations summaries and inspection counts.
+(Vercel included), and is reached through Tailscale Funnel. Read-only: only
+find_stations summaries (coordinates and contact phone included) and inspection counts.
 find_stations answers from the saved register (python -m nbtc_oper register)
 when there is one, and walks the portal live, within LIVE_TIME_LIMIT, when
 there is not. POST /refresh rebuilds the register in the background.
