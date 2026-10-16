@@ -8,24 +8,15 @@ IPs (a Vercel deploy got HTTP 403 on every request), but lets a home IP through.
 Read-only. One portal session serves every
 request, one at a time.
 
-| Route | Auth | Body |
-|---|---|---|
-| `GET /health` | none | — never touches the portal; answers `ok`, `as_of` (the saved register's build time, or null) and `refreshing` |
-| `POST /find-stations` | bearer | `province`, `district`, `subdistrict`, `frequency`, `name`, `source`, `limit`, `details` |
-| `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district`, `result` |
-| `POST /refresh` | bearer | — starts a register rebuild in the background: 202, or 409 `busy` if one is already running |
+The routes, request and response fields, and errors are in
+[`skills/oper-api/REFERENCE.md`](../skills/oper-api/REFERENCE.md), the `oper-api`
+skill that connects a project to this API; its `operClient.ts` is the typed
+client, checked against `app.py` by `tests/test_skill_client.py`.
 
-`/find-stations` answers from the saved station register when there is one
-and it covers the province asked about (นครราชสีมา and ชัยภูมิ; a search with
-no place gets those two, named in `provinces`). The copy holds BCS
-stations, deduped on StnID, with each station's licence and operator, so
-`details` is free; every station also carries `contact_name` and
-`contact_phone` from its latest inspection and `lat`/`lng` from its record, and the reply carries `as_of` (the build time). Otherwise the
-portal is walked live for at most 20 seconds (the bot gives a tool call about
-30): a walk cut short answers `complete: false`, with `total` the portal's own
-count, and `details` is capped at 10.
+`/find-stations` answers from the saved station register when it covers the
+search, and walks the portal live for at most 20 seconds otherwise.
 
-The copy is rebuilt at 03:00 on the 1st of every month by `oper-api-register.timer`, or on
+The saved register is rebuilt at 03:00 on the 1st of every month by `oper-api-register.timer`, or on
 demand with `POST /refresh` (about 30 minutes either way). A lock file keeps the
 two from running at once. Only the BCS data source is saved, with each station's
 contact phone from its latest inspection. A build whose walk comes back incomplete
@@ -37,13 +28,6 @@ runs. To build by hand:
 ```bash
 uv run python -m nbtc_oper register     # writes .nbtc_oper/register.json
 ```
-
-`/count-stations` answers `inspections` (the portal's own total), `stations`
-(distinct), and `by_result`: both counts per result. `result` is
-`ตรงตามมาตรฐาน` or `ไม่ตรงตามมาตรฐาน` and filters on the portal side.
-
-Errors come back as `{"error", "detail"}`: `cloudflare` 503, `login_failed` 502,
-`portal` 502, `unknown_place` / `bad_input` 400.
 
 ```bash
 OPER_API_TOKEN=dev uv run --group server uvicorn server.app:app --host 127.0.0.1 --port 8787

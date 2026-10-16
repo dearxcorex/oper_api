@@ -118,3 +118,11 @@ record keeps the untranslated portal fields under `raw`.
   counts by result (ตรงตามมาตรฐาน / ไม่ตรงตามมาตรฐาน); `result=` filters on the portal side.
 - **Scope.** The inspection search only lists stations somebody has inspected. `RegID=5`,
   `AreaID=8` (เขต 23) and `StnTypeID=4` (สถานีวิทยุกระจายเสียง) are defaults.
+
+## Skill
+
+`skills/oper-api/` is a Claude Code skill that connects another project to the
+HTTP API in `server/`: a typed TypeScript client, the API reference, and the
+pattern that keeps station coordinates and phones away from external models.
+Copy the folder into a project's `.claude/skills/` (or `~/.claude/skills/`);
+the project then needs `OPER_API_URL` and `OPER_API_TOKEN`.
