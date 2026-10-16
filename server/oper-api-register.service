@@ -1,0 +1,15 @@
+# Rebuilds the saved station register (.nbtc_oper/register.json); started by
+# oper-api-register.timer. A failed build exits non-zero, shows in
+# `journalctl -u oper-api-register`, and leaves the previous copy in place.
+# Install: see server/README.md (Raspberry Pi setup).
+[Unit]
+Description=Rebuild the nbtc-oper station register
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=deardevx
+WorkingDirectory=/home/deardevx/oper_api
+EnvironmentFile=/home/deardevx/.config/oper-api/env
+ExecStart=/home/deardevx/.local/bin/uv run --frozen python -m nbtc_oper register

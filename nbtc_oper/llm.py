@@ -11,8 +11,10 @@ FIND_STATIONS_TOOL = {
         "form) for radio stations. Filter by province, district (อำเภอ), sub-district, "
         "exact frequency in MHz, name, or data source; give at least one of province, "
         "district, frequency or name. Thai place names, with or without the จ./อ./ต. "
-        "prefix. A district alone is enough when its name is unique. Returns short "
-        "summaries without coordinates; total counts every match, shown how many came back."
+        "prefix. With no place given, only นครราชสีมา and ชัยภูมิ are searched. A "
+        "district alone is enough; a name shared with another province means the one in "
+        "นครราชสีมา or ชัยภูมิ. Returns short summaries without coordinates; total counts "
+        "every match, shown how many came back."
     ),
     "input_schema": {
         "type": "object",

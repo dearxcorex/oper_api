@@ -9,6 +9,7 @@ import re
 
 DPV_PATH = "/Oper/_inc/js/dpv.js"
 _PREFIXES = ("จ.", "อ.", "ต.", "เขต", "แขวง")
+OFFICE_PROVINCES = ("30", "36")  # นครราชสีมา, ชัยภูมิ: the office's; เขต 23 also has บุรีรัมย์
 
 
 class UnknownPlace(ValueError):
@@ -36,7 +37,7 @@ def parse_dpv(js: str) -> dict:
     }
 
 
-def _bare(name: str) -> str:
+def bare(name: str) -> str:
     name = re.sub(r"\s+", "", name)
     for prefix in _PREFIXES:
         if name.startswith(prefix):
@@ -51,7 +52,7 @@ def _lookup(value, options: dict, what: str) -> str:
     text = str(value).strip()
     if text.isdigit():
         return text
-    matches = [code for code, name in options.items() if _bare(name) == _bare(text)]
+    matches = [code for code, name in options.items() if bare(name) == bare(text)]
     if len(matches) != 1:
         raise UnknownPlace(f"{what} {text!r} not found")
     return matches[0]
@@ -62,7 +63,7 @@ def provinces_with_district(places: dict, district) -> list[str]:
     return [
         prov
         for prov, districts in places["districts"].items()
-        if any(_bare(name) == _bare(str(district)) for name in districts.values())
+        if any(bare(name) == bare(str(district)) for name in districts.values())
     ]
 
 
@@ -76,3 +77,22 @@ def resolve(places: dict, province=None, district=None, subdistrict=None) -> tup
         raise UnknownPlace("a sub-district name needs its district")
     sub = _lookup(subdistrict, places["subdistricts"].get(dist, {}), "sub-district")
     return prov, dist, sub
+
+
+def resolve_loose(places: dict, province=None, district=None, subdistrict=None) -> tuple[str, str, str]:
+    """resolve(), but a district named without its province is looked up in every province.
+
+    A name found in several provinces goes to the office's (OFFICE_PROVINCES)
+    when exactly one of them has it.
+    """
+    if district and not province and not str(district).isdigit():
+        matches = provinces_with_district(places, district)
+        if not matches:
+            raise UnknownPlace(f"district {district!r} not found")
+        if len(matches) > 1:
+            matches = [p for p in matches if p in OFFICE_PROVINCES] or matches
+        if len(matches) > 1:
+            names = [places["provinces"][p] for p in matches]
+            raise UnknownPlace(f"district {district!r} is in several provinces: {', '.join(names)}")
+        province = matches[0]
+    return resolve(places, province, district, subdistrict)

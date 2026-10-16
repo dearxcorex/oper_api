@@ -1,0 +1,11 @@
+# Nightly register rebuild at 03:00 local time; a run missed while the Pi was
+# off starts at the next boot.
+[Unit]
+Description=Nightly nbtc-oper station register rebuild
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

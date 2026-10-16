@@ -1,9 +1,13 @@
+import os
+import threading
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
-from nbtc_oper import CloudflareChallenge
+from nbtc_oper import CloudflareChallenge, NbtcError, places, register
 from nbtc_oper.places import UnknownPlace
-from server.app import DETAILS_LIMIT, create_app
+from server.app import DETAILS_LIMIT, LIVE_TIME_LIMIT, create_app
 
 TOKEN = "test-token"
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
@@ -13,6 +17,9 @@ class FakeApi:
     def __init__(self, error=None):
         self.calls = []
         self.error = error
+
+    def places(self):
+        return places.parse_dpv(open("tests/fixtures/dpv_sample.js", encoding="utf-8").read())
 
     def find_stations(self, **kwargs):
         self.calls.append(("find_stations", kwargs))
@@ -28,19 +35,29 @@ class FakeApi:
 
 
 @pytest.fixture
-def make_client(monkeypatch):
+def register_file(tmp_path):
+    return tmp_path / "register.json"
+
+
+@pytest.fixture
+def make_client(monkeypatch, register_file):
     monkeypatch.setenv("OPER_API_TOKEN", TOKEN)
 
     def make(api):
-        return TestClient(create_app(lambda: api))
+        return TestClient(create_app(lambda: api, register_file=register_file))
 
     return make
 
 
 def test_health_needs_no_token_and_no_portal(make_client):
     api = FakeApi()
-    assert make_client(api).get("/health").json() == {"ok": True}
+    assert make_client(api).get("/health").json() == {"ok": True, "as_of": None, "refreshing": False}
     assert api.calls == []
+
+
+def test_health_reports_the_copys_as_of(make_client, register_file):
+    register.save(saved_copy((1, 98.5, "BCS")), register_file)
+    assert make_client(FakeApi()).get("/health").json()["as_of"] == "2026-10-16T03:00:00+00:00"
 
 
 def test_wrong_or_missing_token_is_rejected(make_client):
@@ -50,9 +67,9 @@ def test_wrong_or_missing_token_is_rejected(make_client):
                        headers={"Authorization": "Bearer nope"}).status_code == 401
 
 
-def test_unset_token_refuses_everything(monkeypatch):
+def test_unset_token_refuses_everything(monkeypatch, register_file):
     monkeypatch.delenv("OPER_API_TOKEN", raising=False)
-    client = TestClient(create_app(FakeApi))
+    client = TestClient(create_app(FakeApi, register_file=register_file))
     assert client.post("/find-stations", json={"frequency": 98.5}, headers=AUTH).status_code == 500
 
 
@@ -64,7 +81,7 @@ def test_find_stations_passes_filters_through(make_client):
     assert res.status_code == 200
     assert api.calls == [("find_stations", {
         "province": "นครราชสีมา", "district": "เมืองนครราชสีมา", "frequency": 98.5,
-        "source": "BCS", "limit": 25, "details": False,
+        "source": "BCS", "limit": 25, "details": False, "time_limit": LIVE_TIME_LIMIT,
     })]
 
 
@@ -72,6 +89,52 @@ def test_details_caps_the_limit(make_client):
     api = FakeApi()
     make_client(api).post("/find-stations", headers=AUTH, json={"frequency": 98.5, "details": True, "limit": 50})
     assert api.calls[0][1]["limit"] == DETAILS_LIMIT
+
+
+def saved_copy(*stations):
+    return {"built_at": "2026-10-16T03:00:00+00:00", "counts": {}, "stations": [
+        {"stn_id": i, "name": f"สถานี {i}", "frequency_mhz": f, "source": src, "pat_code": "360101",
+         "licence_no": "L", "lat": 15.0}
+        for i, f, src in stations
+    ]}
+
+
+def test_find_stations_answers_from_the_saved_register(make_client, register_file):
+    register.save(saved_copy((1, 98.5, "BCS"), (2, 91.0, "BCS2")), register_file)
+    api = FakeApi()
+    res = make_client(api).post("/find-stations", headers=AUTH, json={"province": "ชัยภูมิ", "source": "BCS"})
+    body = res.json()
+    assert [s["stn_id"] for s in body["stations"]] == [1]
+    assert body["as_of"] == "2026-10-16T03:00:00+00:00"
+    assert api.calls == []  # no portal walk
+
+
+def test_a_province_outside_the_saved_register_is_walked_live(make_client, register_file):
+    copy = saved_copy((1, 98.5, "BCS"))
+    copy["provinces"] = ["36"]
+    register.save(copy, register_file)
+    api = FakeApi()
+    res = make_client(api).post("/find-stations", headers=AUTH, json={"province": "นครราชสีมา"})
+    assert "as_of" not in res.json()
+    assert api.calls[0][1]["time_limit"] == LIVE_TIME_LIMIT
+
+
+def test_details_from_the_saved_register_are_not_capped(make_client, register_file):
+    register.save(saved_copy(*[(i, 88.0 + i, "BCS") for i in range(1, 16)]), register_file)
+    res = make_client(FakeApi()).post("/find-stations", headers=AUTH,
+                                      json={"province": "ชัยภูมิ", "details": True, "limit": 15})
+    assert res.json()["shown"] == 15
+
+
+def test_a_rebuilt_register_is_picked_up(make_client, register_file):
+    client = make_client(FakeApi())
+    register.save(saved_copy((1, 98.5, "BCS")), register_file)
+    assert client.post("/find-stations", headers=AUTH, json={"province": "ชัยภูมิ"}).json()["total"] == 1
+    copy = saved_copy((1, 98.5, "BCS"), (2, 99.0, "BCS"))
+    copy["built_at"] = "2026-10-17T03:00:00+00:00"
+    register.save(copy, register_file)
+    os.utime(register_file, (1e9, 2e9))  # a new mtime even within the same clock tick
+    assert client.post("/find-stations", headers=AUTH, json={"province": "ชัยภูมิ"}).json()["total"] == 2
 
 
 def test_unknown_fields_and_sources_are_rejected(make_client):
@@ -126,3 +189,60 @@ def test_portal_errors_map_to_status_codes(make_client, error, status, kind):
     res = make_client(FakeApi(error)).post("/find-stations", headers=AUTH, json={"district": "x"})
     assert res.status_code == status
     assert res.json()["error"] == kind
+
+
+# ---------- /refresh ----------
+
+def wait_until_idle(client):
+    for _ in range(200):
+        if not client.get("/health").json()["refreshing"]:
+            return
+        time.sleep(0.01)
+    raise AssertionError("refresh still running")
+
+
+def test_refresh_needs_the_token(make_client):
+    assert make_client(FakeApi()).post("/refresh").status_code == 401
+
+
+def test_refresh_rebuilds_in_the_background(make_client, register_file, monkeypatch):
+    monkeypatch.setattr(register, "build", lambda api, **_: saved_copy((1, 98.5, "BCS")))
+    client = make_client(FakeApi())
+    assert client.post("/refresh", headers=AUTH).status_code == 202
+    wait_until_idle(client)
+    assert client.get("/health").json()["as_of"] == "2026-10-16T03:00:00+00:00"
+
+
+def test_a_second_refresh_is_refused_while_one_runs(make_client, register_file, monkeypatch):
+    release = threading.Event()
+
+    def slow_build(api, **_):
+        release.wait(5)
+        return saved_copy((1, 98.5, "BCS"))
+
+    monkeypatch.setattr(register, "build", slow_build)
+    client = make_client(FakeApi())
+    assert client.post("/refresh", headers=AUTH).status_code == 202
+    second = client.post("/refresh", headers=AUTH)
+    assert (second.status_code, second.json()["error"]) == (409, "busy")
+    # questions still answer while it runs
+    assert client.post("/count-stations", headers=AUTH, json={
+        "inspected_from": "2026-01-01", "inspected_to": "2026-10-16"}).status_code == 200
+    release.set()
+    wait_until_idle(client)
+    assert client.post("/refresh", headers=AUTH).status_code == 202
+    wait_until_idle(client)
+
+
+def test_a_failed_refresh_keeps_the_last_good_copy(make_client, register_file, monkeypatch):
+    register.save(saved_copy((1, 98.5, "BCS")), register_file)
+
+    def failing_build(api, **_):
+        raise NbtcError("source BCS2: 200 of 243 stations seen")
+
+    monkeypatch.setattr(register, "build", failing_build)
+    client = make_client(FakeApi())
+    assert client.post("/refresh", headers=AUTH).status_code == 202
+    wait_until_idle(client)
+    assert client.get("/health").json()["as_of"] == "2026-10-16T03:00:00+00:00"
+    assert client.post("/find-stations", headers=AUTH, json={"province": "ชัยภูมิ"}).json()["total"] == 1

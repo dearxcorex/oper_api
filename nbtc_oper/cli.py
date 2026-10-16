@@ -5,6 +5,7 @@
     uv run python -m nbtc_oper station 19363
     uv run python -m nbtc_oper stations --province ชัยภูมิ --source OPER
     uv run python -m nbtc_oper search --reported-from 2026-01-01 --source-type-id 2 --count
+    uv run python -m nbtc_oper register    # save the station register for find_stations
 """
 
 import argparse
@@ -13,7 +14,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from . import config
+from . import config, register
 from .api import NbtcOper
 from .client import NbtcError
 from .config import CredentialsNotFound
@@ -79,6 +80,9 @@ def _parser() -> argparse.ArgumentParser:
     n.add_argument("--max-pages", type=int)
     n.add_argument("--count", action="store_true",
                    help="print only the portal's result total (1 request, no file)")
+    r = sub.add_parser("register", help="save the whole station register (.nbtc_oper/register.json)")
+    r.add_argument("--area-id", type=int, default=8)
+    r.add_argument("--station-type-id", type=int, default=4)
     return p
 
 
@@ -96,6 +100,15 @@ def _run(args) -> tuple[str, object]:
         return f"inspection-{args.chk_id}", api.inspection(args.chk_id, fresh=args.fresh)
     if args.command == "station":
         return f"station-{args.stn_id}", api.station(args.stn_id, fresh=args.fresh)
+    if args.command == "register":
+        path = register.path_for(api)
+        copy = register.rebuild(api, path, area_id=args.area_id, station_type_id=args.station_type_id)
+        print(
+            f"{len(copy['stations'])} station(s) {copy['counts']}, "
+            f"{api.requests_sent} request(s) sent, wrote {path}",
+            file=sys.stderr,
+        )
+        return "register", None
 
     skip = {"command", "output", "fresh", "ver_id", "no_raw", "details", "count", "count_stations"}
     filters = {k: v for k, v in vars(args).items() if k not in skip and v is not None}
@@ -140,6 +153,8 @@ def main(argv=None) -> int:
     except (NbtcError, CredentialsNotFound, UnknownPlace) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    if args.command == "register":
+        return 0
     if getattr(args, "count", False) or getattr(args, "count_stations", False):
         if data is None:
             print("error: the portal showed no result total", file=sys.stderr)

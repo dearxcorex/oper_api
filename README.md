@@ -29,6 +29,7 @@ uv run python -m nbtc_oper station 19363
 uv run python -m nbtc_oper stations --province ชัยภูมิ --source OPER   # station register search
 uv run python -m nbtc_oper search --reported-from 2026-01-01 --source-type-id 2 --count   # just the total
 uv run python -m nbtc_oper search --reported-from 2026-01-01 --source-type-id 2 --count-stations   # distinct stations
+uv run python -m nbtc_oper register   # save the whole station register (~30 min)
 ```
 
 ## Library
@@ -92,6 +93,20 @@ record keeps the untranslated portal fields under `raw`.
   station is a short summary (place split into sub-district/district/province)
   with no coordinates and no `raw`; `limit` caps how many come back while
   `total` still counts them all.
+- **Saved register.** `register.build(api)` walks the station register once per
+  data source across the area (the per-source totals add up to more than the
+  unfiltered total, so one unfiltered walk misses stations; walks by province
+  come back short), dedupes on StnID and fetches each station's record for its
+  PATCode, licence and operator. Only นครราชสีมา and ชัยภูมิ are kept
+  (`register.PROVINCES`); a station whose address names another province, such
+  as เขต 23's บุรีรัมย์, is dropped before its record is fetched. A walk that
+  comes back incomplete fails the build. `register.find(copy, api.places(), …)` is
+  `find_stations()` over that copy, with no portal requests and an `as_of`.
+  `register.rebuild()` / `register` builds and saves under a lock file, so two
+  rebuilds never run at once, and a failed build leaves the old copy.
+- **Time limit.** `find_stations(time_limit=20)` stops asking the portal once the
+  time runs out and returns what it saw, `complete: false`, `total` the portal's
+  own count; a request already sent still finishes.
 - **Counts.** `--count` / `search(max_pages=1)["total"]` reads the portal's own total from page 1
   and counts inspections. `--count-stations` / `count_stations()` walks every
   page and counts distinct stations: by station code, or by name, frequency

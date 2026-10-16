@@ -3,25 +3,34 @@
 Runs on a home machine because Cloudflare challenges the portal from cloud IPs
 (Vercel included), and is reached through Tailscale Funnel. Read-only, and
 never returns coordinates: only find_stations summaries and inspection counts.
+find_stations answers from the saved register (python -m nbtc_oper register)
+when there is one, and walks the portal live, within LIVE_TIME_LIMIT, when
+there is not. POST /refresh rebuilds the register in the background.
 
     uv run --group server uvicorn server.app:app --host 127.0.0.1 --port 8787
 
 Every route but /health needs `Authorization: Bearer $OPER_API_TOKEN`.
 """
+import logging
 import os
 import secrets
 import threading
 from datetime import date
+from pathlib import Path
 from typing import Callable, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from nbtc_oper import config, register
 from nbtc_oper import CloudflareChallenge, CredentialsNotFound, LoginFailed, NbtcError, NbtcOper
 from nbtc_oper.places import UnknownPlace
 
-DETAILS_LIMIT = 10  # details costs one portal request per station shown
+DETAILS_LIMIT = 10  # live, details costs one portal request per station shown
+LIVE_TIME_LIMIT = 20  # seconds; the bot's tool budget is about 30
+
+log = logging.getLogger("uvicorn.error")
 
 
 class FindStations(BaseModel):
@@ -47,9 +56,14 @@ class CountStations(BaseModel):
     result: Literal["ตรงตามมาตรฐาน", "ไม่ตรงตามมาตรฐาน"] | None = None  # the portal's OpinionDet
 
 
-def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
+def create_app(
+    make_api: Callable[[], NbtcOper] = NbtcOper, register_file: Path | None = None
+) -> FastAPI:
     app = FastAPI(title="nbtc-oper", docs_url=None, redoc_url=None, openapi_url=None)
     api = None
+    register_file = register_file or config.state_dir() / register.FILE_NAME
+    saved = {"mtime": None, "copy": None}
+    refresh = {"thread": None}
     # One portal session, one request at a time: Session keeps a cookie jar and
     # a min-interval clock that concurrent calls would trample.
     lock = threading.Lock()
@@ -59,6 +73,21 @@ def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
         if api is None:
             api = make_api()
         return api
+
+    def saved_register() -> dict | None:
+        """The register copy, re-read whenever its file changes."""
+        mtime = register_file.stat().st_mtime if register_file.is_file() else None
+        if mtime != saved["mtime"]:
+            saved["mtime"], saved["copy"] = mtime, register.load(register_file) if mtime else None
+        return saved["copy"]
+
+    def rebuild(lock: register.BuildLock) -> None:
+        # Its own portal session, so questions keep using the shared one meanwhile.
+        try:
+            copy = register.rebuild(make_api(), register_file, lock=lock, log=log.info)
+            log.info("register rebuilt: %d station(s) %s", len(copy["stations"]), copy["counts"])
+        except Exception:
+            log.exception("register rebuild failed; the previous copy stays")
 
     def authorized(authorization: str | None = Header(None)) -> None:
         token = os.environ.get("OPER_API_TOKEN", "")
@@ -79,6 +108,10 @@ def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
     def no_credentials(_, exc):
         return JSONResponse({"error": "no_credentials", "detail": str(exc)}, status_code=500)
 
+    @app.exception_handler(register.Busy)
+    def busy(_, exc):
+        return JSONResponse({"error": "busy", "detail": str(exc)}, status_code=409)
+
     @app.exception_handler(NbtcError)
     def portal_error(_, exc):
         return JSONResponse({"error": "portal", "detail": str(exc)}, status_code=502)
@@ -91,15 +124,32 @@ def create_app(make_api: Callable[[], NbtcOper] = NbtcOper) -> FastAPI:
 
     @app.get("/health")
     def health():
-        return {"ok": True}
+        copy = saved_register()
+        thread = refresh["thread"]
+        return {
+            "ok": True,
+            "as_of": copy["built_at"] if copy else None,
+            "refreshing": bool(thread and thread.is_alive()),
+        }
+
+    @app.post("/refresh", status_code=202, dependencies=[Depends(authorized)])
+    def start_refresh():
+        lock = register.BuildLock(register_file)
+        lock.acquire()  # Busy -> 409: a running rebuild is refused, not queued
+        refresh["thread"] = threading.Thread(target=rebuild, args=(lock,), daemon=True)
+        refresh["thread"].start()
+        return {"started": True}
 
     @app.post("/find-stations", dependencies=[Depends(authorized)])
     def find_stations(body: FindStations):
         args = body.model_dump(exclude_none=True)
-        if body.details:
-            args["limit"] = min(body.limit, DETAILS_LIMIT)
         with lock:
-            return portal().find_stations(**args)
+            copy = saved_register()
+            if copy is not None and register.covers(copy, portal().places(), **args):
+                return register.find(copy, portal().places(), **args)
+            if body.details:
+                args["limit"] = min(body.limit, DETAILS_LIMIT)
+            return portal().find_stations(**args, time_limit=LIVE_TIME_LIMIT)
 
     @app.post("/count-stations", dependencies=[Depends(authorized)])
     def count_stations(body: CountStations):

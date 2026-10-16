@@ -2,6 +2,7 @@
 and the inspection form's code tables."""
 
 import json
+import time
 
 from . import parse, places
 from .client import NbtcError, Session
@@ -121,6 +122,7 @@ class NbtcOper:
         self._places = None
         self._form_options = None
         self._alternate = None
+        self.clock = time.monotonic  # find_stations' time_limit runs on it
 
     @property
     def requests_sent(self) -> int:
@@ -233,6 +235,7 @@ class NbtcOper:
         subdistrict=None,
         max_pages: int | None = None,
         fresh: bool = False,
+        deadline: float | None = None,
         **filters,
     ) -> dict:
         """Every register station matching the filters, all pages, deduped on stn_id.
@@ -240,12 +243,13 @@ class NbtcOper:
         This is the picker behind the inspection form's station field; unlike
         search() it also lists stations nobody has inspected. `source` is the
         portal's SrcData (ASMS, WEB, BCS, BCS2, BCS3, OPER). See
-        build_station_query() for the full filter list.
+        build_station_query() for the full filter list. Past deadline (on
+        self.clock) no further page is asked for and the result is incomplete.
         """
         if province or district or subdistrict:
             prov, dist, sub = places.resolve(self.places(), province, district, subdistrict)
             filters.update(province_id=prov, district_id=dist, subdistrict_id=sub)
-        return self._station_walk(filters, max_pages, fresh)
+        return self._station_walk(filters, max_pages, fresh, deadline)
 
     def find_stations(
         self,
@@ -259,57 +263,81 @@ class NbtcOper:
         limit: int = 25,
         details: bool = False,
         fresh: bool = False,
+        time_limit: float | None = None,
     ) -> dict:
         """Register stations as short summaries, shaped for a chat model's tool call.
 
         Any of province / district / frequency / name narrows the search; at
-        least one is needed. A district without its province is looked up
-        across every province. frequency matches the portal's way: exactly,
+        least one is needed. With no place, only the office's provinces
+        (places.OFFICE_PROVINCES: นครราชสีมา, ชัยภูมิ) are searched, one walk
+        each, and the result names them in `provinces`. A district without
+        its province is looked up across every province, the office's first. frequency matches the portal's way: exactly,
         in MHz. Stations whose frequency reads 0.0 are dropped. Summaries
         carry no coordinates; details=True adds licence and operator, one
-        request per station shown.
+        request per station shown. With time_limit (seconds), the walk stops
+        asking once it runs out and returns what it saw: complete is False and
+        total is the portal's own count when it showed one. A request already
+        sent still finishes, so the call can run one request past the limit.
         -> {"total", "shown", "truncated", "complete", "stations"}
         """
+        deadline = self.clock() + time_limit if time_limit is not None else None
         if not any(v not in (None, "") for v in (province, district, subdistrict, frequency, name)):
             raise ValueError("find_stations needs a province, district, frequency or name")
-        if district and not province and not str(district).isdigit():
-            matches = places.provinces_with_district(self.places(), district)
-            if not matches:
-                raise places.UnknownPlace(f"district {district!r} not found")
-            if len(matches) > 1:
-                names = [self.places()["provinces"][p] for p in matches]
-                raise places.UnknownPlace(
-                    f"district {district!r} is in several provinces: {', '.join(names)}"
-                )
-            province = matches[0]
+        anywhere = not (province or district or subdistrict)
+        if not anywhere:
+            province, district, subdistrict = places.resolve_loose(
+                self.places(), province, district, subdistrict
+            )
         if frequency not in (None, ""):
             frequency = f"{float(frequency):g}"  # the portal matches "91" but not "91.0"
 
-        result = self.station_search(
-            province=province,
-            district=district,
-            subdistrict=subdistrict,
-            frequency=frequency or "",
-            name=name or "",
-            source=source or "",
-            fresh=fresh,
-        )
+        provinces = places.OFFICE_PROVINCES if anywhere else (province,)
+        walks = []
+        for n, prov in enumerate(provinces):
+            share = None  # each walk gets an even part of the time still left
+            if deadline is not None:
+                share = self.clock() + (deadline - self.clock()) / (len(provinces) - n)
+            walks.append(self.station_search(
+                province=prov,
+                district=district,
+                subdistrict=subdistrict,
+                frequency=frequency or "",
+                name=name or "",
+                source=source or "",
+                fresh=fresh,
+                deadline=share,
+            ))
+        result = {
+            "rows": list({r["stn_id"]: r for w in walks for r in w["rows"]}.values()),
+            "complete": all(w["complete"] for w in walks),
+            "total": sum(w["total"] or 0 for w in walks) if any(w["total"] for w in walks) else None,
+        }
         rows = [r for r in result["rows"] if r.get("frequency_mhz") != 0.0]
         rows.sort(key=lambda r: (r.get("frequency_mhz") is None, r.get("frequency_mhz") or 0, r.get("name") or ""))
         shown = rows[:limit]
         stations = [
-            parse.compact_station(r, self.station(r["stn_id"], fresh=fresh) if details else None)
+            parse.compact_station(
+                r,
+                self.station(r["stn_id"], fresh=fresh)
+                if details and not self._out_of_time(deadline) else None,
+            )
             for r in shown
         ]
+        total = len(rows) if result["complete"] else max(result["total"] or 0, len(rows))
         return {
-            "total": len(rows),
+            "total": total,
             "shown": len(stations),
-            "truncated": len(stations) < len(rows),
+            "truncated": len(stations) < total,
             "complete": result["complete"],
+            **({"provinces": [places.bare(self.places()["provinces"][p]) for p in places.OFFICE_PROVINCES]}
+               if anywhere else {}),
             "stations": stations,
         }
 
-    def _station_walk(self, filters, max_pages, fresh) -> dict:
+    def _out_of_time(self, deadline) -> bool:
+        return deadline is not None and self.clock() >= deadline
+
+    def _station_walk(self, filters, max_pages, fresh, deadline=None) -> dict:
         """Walk the picker; if paging loses rows, re-ask one place level down.
 
         The picker orders its pages unstably, so a station can repeat on several
@@ -319,15 +347,18 @@ class NbtcOper:
         """
         query = build_station_query(**filters)
         result = self._walk(
-            STATION_SEARCH_PATH, query, parse.parse_station_search_page, "stn_id", max_pages, fresh
+            STATION_SEARCH_PATH, query, parse.parse_station_search_page, "stn_id", max_pages, fresh,
+            deadline,
         )
         if result["complete"] or max_pages is not None or result["total"] is None:
             return result
+        if self._out_of_time(deadline):
+            return result
         rows = {row["stn_id"]: row for row in result["rows"]}
         for narrower in self._narrower(filters, query):
-            if len(rows) >= result["total"]:
+            if len(rows) >= result["total"] or self._out_of_time(deadline):
                 break
-            for row in self._station_walk({**filters, **narrower}, None, fresh)["rows"]:
+            for row in self._station_walk({**filters, **narrower}, None, fresh, deadline)["rows"]:
                 rows.setdefault(row["stn_id"], row)
         result["rows"] = list(rows.values())
         result["complete"] = len(rows) >= result["total"]
@@ -346,11 +377,13 @@ class NbtcOper:
         first_page = self.session.get(STATION_SEARCH_PATH, query + [("page", "1")])
         return [{"province_id": c} for c in parse.station_search_provinces(first_page)]
 
-    def _walk(self, path, query, parse_page, key, max_pages, fresh) -> dict:
+    def _walk(self, path, query, parse_page, key, max_pages, fresh, deadline=None) -> dict:
         rows, total, pages = {}, None, 1
         for attempt in range(MAX_PASSES):
             page = 1
             while page <= pages and (max_pages is None or page <= max_pages):
+                if self._out_of_time(deadline):
+                    break
                 html = self.session.get(
                     path, query + [("page", str(page))], fresh=fresh or attempt > 0
                 )
@@ -361,6 +394,8 @@ class NbtcOper:
                     rows.setdefault(row[key], row)
                 page += 1
             if max_pages is not None or total is None or len(rows) >= total:
+                break
+            if self._out_of_time(deadline):
                 break
 
         return {
