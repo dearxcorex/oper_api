@@ -17,16 +17,18 @@ request, one at a time.
 
 `/find-stations` answers from the saved station register when there is one
 and it covers the province asked about (นครราชสีมา and ชัยภูมิ; a search with
-no place gets those two, named in `provinces`). Every source is walked
-separately, deduped on StnID, with each station's licence and operator, so
-`details` is free and the reply carries `as_of` (the build time). Otherwise the
+no place gets those two, named in `provinces`). The copy holds BCS
+stations, deduped on StnID, with each station's licence and operator, so
+`details` is free; every station also carries `contact_name` and
+`contact_phone` from its latest inspection and the reply carries `as_of` (the build time). Otherwise the
 portal is walked live for at most 20 seconds (the bot gives a tool call about
 30): a walk cut short answers `complete: false`, with `total` the portal's own
 count, and `details` is capped at 10.
 
 The copy is rebuilt at 03:00 on the 1st of every month by `oper-api-register.timer`, or on
 demand with `POST /refresh` (about 30 minutes either way). A lock file keeps the
-two from running at once. Only the BCS data source is saved. A build whose walk comes back incomplete
+two from running at once. Only the BCS data source is saved, with each station's
+contact phone from its latest inspection. A build whose walk comes back incomplete
 fails and leaves the previous copy in place; the timer's failures show in
 `journalctl -u oper-api-register`, a refresh's in `journalctl -u oper-api`.
 A refresh uses its own portal login, so questions keep being answered while it

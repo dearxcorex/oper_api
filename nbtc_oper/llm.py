@@ -14,7 +14,9 @@ FIND_STATIONS_TOOL = {
         "prefix. With no place given, only นครราชสีมา and ชัยภูมิ are searched. A "
         "district alone is enough; a name shared with another province means the one in "
         "นครราชสีมา or ชัยภูมิ. Returns short summaries without coordinates; total counts "
-        "every match, shown how many came back."
+        "every match, shown how many came back. When the answer comes from the saved "
+        "register (as_of is set), each station has contact_name and contact_phone from its "
+        "latest inspection (contact_date), or null when it was never inspected."
     ),
     "input_schema": {
         "type": "object",
