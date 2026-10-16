@@ -10,7 +10,7 @@ elsewhere is not covered and goes to the portal. Each station's dSTN record supp
 licence and operator that find_stations' details=True shows. No coordinates are
 kept.
 
-rebuild() is build() then save(), under a lock file so the nightly timer and an
+rebuild() is build() then save(), under a lock file so the monthly timer and an
 on-demand refresh never run at once; a build that fails leaves the last good
 copy in place.
 """

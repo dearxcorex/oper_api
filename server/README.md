@@ -24,7 +24,7 @@ portal is walked live for at most 20 seconds (the bot gives a tool call about
 30): a walk cut short answers `complete: false`, with `total` the portal's own
 count, and `details` is capped at 10.
 
-The copy is rebuilt every night at 03:00 by `oper-api-register.timer`, or on
+The copy is rebuilt at 03:00 on the 1st of every month by `oper-api-register.timer`, or on
 demand with `POST /refresh` (about 30 minutes either way). A lock file keeps the
 two from running at once. Only the BCS data source is saved. A build whose walk comes back incomplete
 fails and leaves the previous copy in place; the timer's failures show in
@@ -66,7 +66,7 @@ sudo systemctl start --no-block oper-api-register   # the first register build, 
 curl http://127.0.0.1:8787/health
 ```
 
-The timer fires at 03:00 in the Pi's time zone (`sudo timedatectl set-timezone Asia/Bangkok`);
+The timer fires at 03:00 on the 1st in the Pi's time zone (`sudo timedatectl set-timezone Asia/Bangkok`);
 `systemctl list-timers oper-api-register` shows the next run.
 
 Tailscale Funnel (needs HTTPS and Funnel turned on for the tailnet in the admin console):
