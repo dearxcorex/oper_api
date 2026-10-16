@@ -33,11 +33,11 @@ This searches the station register, inspected or not. It needs at least one of
 `province`, `district`, `frequency` or `name`. `frequency` is an exact match in
 MHz, `name` is a substring match, and stations whose frequency reads 0.0 are
 dropped. `limit` (1–100, default 25) caps `stations`, while `total` still
-counts every match. `source` defaults to `BCS`.
+counts every match. With no `source`, BCS and OPER are searched together.
 
 The answer comes from one of two places:
 
-- **The saved copy.** This is used for BCS in นครราชสีมา (30) and ชัยภูมิ (36),
+- **The saved copy.** This is used for BCS and OPER (or no `source`) in นครราชสีมา (30) and ชัยภูมิ (36),
   and for a search with no place, which gets those two provinces, named in
   `provinces`. Answers come back instantly with `complete: true` and `as_of`
   set to the build time. Every station carries `lat`/`lng` and

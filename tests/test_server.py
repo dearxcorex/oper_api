@@ -92,7 +92,7 @@ def test_details_caps_the_limit(make_client):
 
 
 def saved_copy(*stations):
-    return {"built_at": "2026-10-16T03:00:00+00:00", "counts": {"BCS": len(stations)}, "stations": [
+    return {"built_at": "2026-10-16T03:00:00+00:00", "counts": {"BCS": len(stations), "OPER": 0}, "stations": [
         {"stn_id": i, "name": f"สถานี {i}", "frequency_mhz": f, "source": src, "pat_code": "360101",
          "licence_no": "L", "lat": 15.0}
         for i, f, src in stations

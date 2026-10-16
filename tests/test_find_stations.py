@@ -34,7 +34,7 @@ def api_for(session):
 
 def test_a_live_walk_stops_at_the_time_limit(tmp_path):
     session = SlowSession(tmp_path)
-    result = api_for(session).find_stations(province="ชัยภูมิ", time_limit=40)
+    result = api_for(session).find_stations(province="ชัยภูมิ", source="BCS", time_limit=40)
     assert session.now <= 40
     assert result["complete"] is False
     assert result["total"] == 282  # the portal's own count
@@ -52,23 +52,26 @@ class RecordingSession(SlowSession):
     def __init__(self, tmp_path):
         super().__init__(tmp_path)
         self.provinces = []
+        self.sources = []
 
     def get(self, path, params=None, *, fresh=False):
         self.provinces.append(dict(params)["sProv1"])
+        self.sources.append(dict(params)["SrcData"])
         return super().get(path, params, fresh=fresh)
 
 
 def test_a_search_with_no_place_walks_only_the_offices_provinces(tmp_path):
     session = RecordingSession(tmp_path)
-    result = api_for(session).find_stations(frequency=91.75, time_limit=15)
-    assert session.provinces == ["30", "36"]  # one page each before the limit
+    result = api_for(session).find_stations(frequency=91.75, time_limit=40)
+    assert session.provinces == ["30", "30", "36", "36"]  # one page each before the limit
+    assert session.sources == ["BCS", "OPER", "BCS", "OPER"]
     assert result["provinces"] == ["นครราชสีมา", "ชัยภูมิ"]
     assert result["complete"] is False
 
 
 def test_a_named_place_is_walked_alone(tmp_path):
     session = RecordingSession(tmp_path)
-    result = api_for(session).find_stations(province="ชัยภูมิ", time_limit=5)
+    result = api_for(session).find_stations(province="ชัยภูมิ", source="BCS", time_limit=5)
     assert session.provinces == ["36"] and "provinces" not in result
 
 

@@ -15,8 +15,8 @@ STATION_SEARCH_PATH = "/Oper/ISO/STN/mStnSch.aspx"
 
 # A result set that pages unstably is re-walked until every row is seen.
 MAX_PASSES = 3
-# find_stations' data source (SrcData) when none is asked for.
-DEFAULT_SOURCE = "BCS"
+# find_stations' data sources (SrcData) when none is asked for.
+DEFAULT_SOURCES = ("BCS", "OPER")
 
 
 def build_query(
@@ -287,7 +287,8 @@ class NbtcOper:
         (places.OFFICE_PROVINCES: นครราชสีมา, ชัยภูมิ) are searched, one walk
         each, and the result names them in `provinces`. A district without
         its province is looked up across every province, the office's first. frequency matches the portal's way: exactly,
-        in MHz. source defaults to DEFAULT_SOURCE (BCS). Stations whose
+        in MHz. With no source, DEFAULT_SOURCES (BCS, OPER) are searched, one
+        walk per province and source. Stations whose
         frequency reads 0.0 are dropped. details=True adds licence, operator
         and coordinates (lat, lng), one request per station shown. With time_limit (seconds), the walk stops
         asking once it runs out and returns what it saw: complete is False and
@@ -307,18 +308,20 @@ class NbtcOper:
             frequency = f"{float(frequency):g}"  # the portal matches "91" but not "91.0"
 
         provinces = places.OFFICE_PROVINCES if anywhere else (province,)
+        sources = (source,) if source else DEFAULT_SOURCES
+        plan = [(prov, src) for prov in provinces for src in sources]
         walks = []
-        for n, prov in enumerate(provinces):
+        for n, (prov, src) in enumerate(plan):
             share = None  # each walk gets an even part of the time still left
             if deadline is not None:
-                share = self.clock() + (deadline - self.clock()) / (len(provinces) - n)
+                share = self.clock() + (deadline - self.clock()) / (len(plan) - n)
             walks.append(self.station_search(
                 province=prov,
                 district=district,
                 subdistrict=subdistrict,
                 frequency=frequency or "",
                 name=name or "",
-                source=source or DEFAULT_SOURCE,
+                source=src,
                 fresh=fresh,
                 deadline=share,
             ))

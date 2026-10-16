@@ -26,10 +26,11 @@ def station(stn_id, freq, source, pat_code, name="สถานี", location=Non
 def copy():
     return {
         "built_at": "2026-10-16T03:00:00+00:00",
-        "counts": {"BCS": 4},
+        "counts": {"BCS": 4, "OPER": 1},
         "stations": [
             station(1, 98.5, "BCS", "360101"),
             station(2, 91.0, "BCS2", "360101"),
+            station(6, 88.0, "OPER", "360101"),
             station(3, 92.25, "BCS", "360403", name="คนรักสุขภาพ"),
             station(4, 0.0, "BCS", "360101"),
             station(5, 89.0, "BCS", None, location="1 ต.ในเมือง อ.เมืองชัยภูมิ จ.ชัยภูมิ"),
@@ -48,16 +49,25 @@ def test_source_matches_exactly(copy, gazetteer):
     assert ids(register.find(copy, gazetteer, province="ชัยภูมิ", source="BCS2")) == [2]
 
 
-def test_no_source_means_bcs(copy, gazetteer):
-    assert ids(register.find(copy, gazetteer, province="ชัยภูมิ")) == [5, 3, 1]
+def test_no_source_means_bcs_and_oper(copy, gazetteer):
+    assert ids(register.find(copy, gazetteer, province="ชัยภูมิ")) == [6, 5, 3, 1]
     assert register.covers(copy, gazetteer, province="ชัยภูมิ")
     assert not register.covers(copy, gazetteer, province="ชัยภูมิ", source="BCS2")  # not walked
+    del copy["counts"]["OPER"]  # a copy built before OPER was walked
+    assert not register.covers(copy, gazetteer, province="ชัยภูมิ")
+    assert register.covers(copy, gazetteer, province="ชัยภูมิ", source="BCS")
+
+
+def test_a_station_listed_under_both_sources_matches_either(copy, gazetteer):
+    copy["stations"][0]["sources"] = ["BCS", "OPER"]
+    assert ids(register.find(copy, gazetteer, province="ชัยภูมิ", source="OPER")) == [6, 1]
+    assert "sources" not in register.find(copy, gazetteer, frequency=98.5)["stations"][0]
 
 
 def test_places_match_by_pat_code_and_fall_back_to_the_address(copy, gazetteer):
     assert ids(register.find(copy, gazetteer, district="เกษตรสมบูรณ์")) == [3]
     assert ids(register.find(copy, gazetteer, province="ชัยภูมิ", district="เมืองชัยภูมิ",
-                             subdistrict="ในเมือง")) == [5, 1]
+                             subdistrict="ในเมือง")) == [6, 5, 1]
 
 
 def test_frequency_is_exact_and_name_is_a_substring(copy, gazetteer):
@@ -78,7 +88,7 @@ def test_details_only_when_asked_coordinates_always_and_never_codes(copy, gazett
 
 def test_limit_truncates(copy, gazetteer):
     result = register.find(copy, gazetteer, province="ชัยภูมิ", limit=1)
-    assert (result["total"], result["shown"], result["truncated"]) == (3, 1, True)
+    assert (result["total"], result["shown"], result["truncated"]) == (4, 1, True)
 
 
 class FakePortal:
@@ -148,6 +158,7 @@ def test_build_dedupes_across_sources_and_tries_the_other_login():
     assert sorted(s["stn_id"] for s in copy["stations"]) == [9, 10]
     assert all(s["pat_code"] == "360101" for s in copy["stations"])
     assert all((s["lat"], s["lng"]) == (15.0, 102.0) for s in copy["stations"])
+    assert {s["stn_id"]: s["sources"] for s in copy["stations"]}[9] == ["WEB", "BCS", "BCS2"]
 
 
 def test_build_takes_each_stations_phone_from_its_latest_inspection_that_has_one():

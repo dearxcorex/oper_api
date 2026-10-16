@@ -35,7 +35,7 @@ FIND_STATIONS_TOOL = {
             "source": {
                 "type": "string",
                 "enum": ["ASMS", "WEB", "BCS", "BCS2", "BCS3", "OPER"],
-                "description": "Data source (แหล่งข้อมูล); omit for BCS",
+                "description": "Data source (แหล่งข้อมูล); omit for BCS and OPER together",
             },
             "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 25},
             "details": {

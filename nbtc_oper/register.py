@@ -4,12 +4,12 @@ Walking the picker live takes over a minute for a district (it re-asks place by
 place when paging drops rows), more than a chat bot can wait. build() walks it
 once per data source in SOURCES, deduped on StnID: the per-source totals add up
 to more than the unfiltered total, so the unfiltered walk can't be trusted to
-see every station. Only BCS is kept; a search for another source is not
-covered and goes to the portal. Only the office's provinces are kept (places.OFFICE_PROVINCES); a search
+see every station. Only BCS and OPER are kept; a search for another source is
+not covered and goes to the portal. Only the office's provinces are kept (places.OFFICE_PROVINCES); a search
 elsewhere is not covered and goes to the portal. Each station's dSTN record supplies its place codes (PATCode) and the
 licence and operator that find_stations' details=True shows, and its
 coordinates (lat, lng), which show on every summary. The register has
-no phone numbers for BCS stations; each station's contact name and phone come
+no phone numbers for its stations; each station's contact name and phone come
 from its latest inspection form instead, and are shown on every summary too.
 
 rebuild() is build() then save(), under a lock file so the monthly timer and an
@@ -25,10 +25,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import parse, places
-from .api import DEFAULT_SOURCE, station_key
+from .api import DEFAULT_SOURCES, station_key
 from .client import NbtcError
 
-SOURCES = (DEFAULT_SOURCE,)  # the portal also has ASMS, WEB, BCS2, BCS3, OPER
+SOURCES = DEFAULT_SOURCES  # the portal also has ASMS, WEB, BCS2, BCS3
 DETAIL_KEYS = ("licence_no", "licence_expires", "operator", "nbtc_code", "station_id")
 CONTACT_KEYS = ("contact_name", "contact_phone", "contact_date")
 FILE_NAME = "register.json"
@@ -100,7 +100,7 @@ def build(api, *, sources=SOURCES, provinces=places.OFFICE_PROVINCES, area_id: i
     """
     log = log or (lambda msg: print(msg, file=sys.stderr))
     wanted = {p: places.bare(api.places()["provinces"][p]) for p in provinces}
-    rows, counts = {}, {}
+    rows, counts, seen_in = {}, {}, {}
     for source in sources:
         result = api.station_search(
             source=source, area_id=area_id, station_type_id=station_type_id, fresh=True
@@ -112,6 +112,7 @@ def build(api, *, sources=SOURCES, provinces=places.OFFICE_PROVINCES, area_id: i
         counts[source] = len(result["rows"])
         for row in result["rows"]:
             rows.setdefault(row["stn_id"], row)
+            seen_in.setdefault(row["stn_id"], []).append(source)
         log(f"{source}: {counts[source]} station(s), {api.requests_sent} request(s) so far")
 
     named = {sid: parse.split_location(row.get("location"))["province"] for sid, row in rows.items()}
@@ -122,6 +123,7 @@ def build(api, *, sources=SOURCES, provinces=places.OFFICE_PROVINCES, area_id: i
         if n % 50 == 0:
             log(f"records {n}/{len(todo)}")
         entry = _entry(row, _record(api, row["stn_id"]))
+        entry["sources"] = seen_in[row["stn_id"]]
         if entry["pat_code"] and entry["pat_code"][:2] not in wanted:
             continue
         if not entry["pat_code"] and named[row["stn_id"]] is None:
@@ -212,9 +214,9 @@ def load(path: Path) -> dict | None:
 def covers(
     copy: dict, gazetteer: dict, *, province=None, district=None, subdistrict=None, source=None, **_
 ) -> bool:
-    """Whether the copy can answer a search: a source it walked (BCS when none is
-    named), and no place or a province it was built for."""
-    if (source or DEFAULT_SOURCE) not in copy["counts"]:
+    """Whether the copy can answer a search: sources it walked (BCS and OPER when
+    none is named), and no place or a province it was built for."""
+    if not set((source,) if source else DEFAULT_SOURCES) <= copy["counts"].keys():
         return False
     if "provinces" not in copy:
         return True  # built before the province limit: the whole area
@@ -238,9 +240,9 @@ def find(
     """find_stations() over the copy: same filters, same result shape, plus as_of.
 
     A search with no place covers only the copy's provinces, named in `provinces`;
-    with no source, only BCS.
+    with no source, BCS and OPER.
     """
-    source = source or DEFAULT_SOURCE
+    wanted = {source} if source else set(DEFAULT_SOURCES)
     prov, dist, sub = places.resolve_loose(gazetteer, province, district, subdistrict)
     code = next((c for c in (sub, dist, prov) if c != "0"), None)
     names = {
@@ -258,7 +260,7 @@ def find(
             return False
         if needle and needle not in (s.get("name") or "").casefold():
             return False
-        return s.get("source") == source
+        return not wanted.isdisjoint(s.get("sources") or [s.get("source")])
 
     rows = [s for s in copy["stations"] if s.get("frequency_mhz") != 0.0 and matches(s)]
     rows.sort(key=lambda r: (r.get("frequency_mhz") is None, r.get("frequency_mhz") or 0, r.get("name") or ""))
@@ -290,7 +292,7 @@ def _in_place(station: dict, code: str, names: dict) -> bool:
 
 
 def _summary(station: dict, details: bool) -> dict:
-    out = {k: v for k, v in station.items() if k != "pat_code"}
+    out = {k: v for k, v in station.items() if k not in ("pat_code", "sources")}
     if not details:
         for key in DETAIL_KEYS:
             out.pop(key, None)
