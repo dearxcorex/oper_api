@@ -8,9 +8,9 @@ see every station. Only BCS and OPER are kept; a search for another source is
 not covered and goes to the portal. Only the office's provinces are kept (places.OFFICE_PROVINCES); a search
 elsewhere is not covered and goes to the portal. Each station's dSTN record supplies its place codes (PATCode) and the
 licence and operator that find_stations' details=True shows, and its
-coordinates (lat, lng), which show on every summary. The register has
-no phone numbers for its stations; each station's contact name and phone come
-from its latest inspection form instead, and are shown on every summary too.
+coordinates (lat, lng) and its coordinator's name and phone (CoopNa, CoopTel,
+what the add-inspection form fills in when a station is picked), all shown on
+every summary. OPER stations mostly have a phone there; BCS stations mostly don't.
 
 rebuild() is build() then save(), under a lock file so the monthly timer and an
 on-demand refresh never run at once; a build that fails leaves the last good
@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import parse, places
-from .api import DEFAULT_SOURCES, station_key
+from .api import DEFAULT_SOURCES
 from .client import NbtcError
 
 SOURCES = DEFAULT_SOURCES  # the portal also has ASMS, WEB, BCS2, BCS3
@@ -129,9 +129,6 @@ def build(api, *, sources=SOURCES, provinces=places.OFFICE_PROVINCES, area_id: i
         if not entry["pat_code"] and named[row["stn_id"]] is None:
             continue  # no place at all: cannot say it is in either province
         stations.append(entry)
-    contacts = _contacts(api, provinces, log)
-    for entry in stations:
-        entry.update(contacts.get(entry["stn_id"]) or dict.fromkeys(CONTACT_KEYS))
     return {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "area_id": area_id,
@@ -140,42 +137,6 @@ def build(api, *, sources=SOURCES, provinces=places.OFFICE_PROVINCES, area_id: i
         "counts": counts,
         "stations": stations,
     }
-
-
-def _contacts(api, provinces, log) -> dict:
-    """StnID -> the contact name and phone from the station's latest inspection that has a phone.
-
-    Inspection rows carry no StnID, so rows are grouped by station_key() and
-    opened newest first; once one form of a station yields a phone, its older
-    ones are skipped. Contacts are a bonus: an incomplete walk or an unreadable
-    form is logged and skipped rather than failing the build.
-    """
-    rows = []
-    for prov in provinces:
-        result = api.search(province=prov, fresh=True)
-        if not result["complete"]:
-            log(f"inspections in {prov}: {len(result['rows'])} of {result['total']} seen")
-        rows += result["rows"]
-    rows.sort(key=lambda r: r.get("inspected_date") or "", reverse=True)
-    contacts, found = {}, set()
-    for n, row in enumerate(rows, 1):
-        if n % 100 == 0:
-            log(f"inspections {n}/{len(rows)}, {len(contacts)} contact(s)")
-        if station_key(row) in found:
-            continue
-        try:
-            form = api.inspection(row["chk_id"], with_station=False, fresh=True)
-        except NbtcError:
-            continue
-        if form["stn_id"] and form["contact_phone"]:
-            found.add(station_key(row))
-            contacts.setdefault(form["stn_id"], {
-                "contact_name": form["contact_name"],
-                "contact_phone": form["contact_phone"],
-                "contact_date": form["inspected_date"] or row.get("inspected_date"),
-            })
-    log(f"{len(contacts)} contact(s) from {len(rows)} inspection(s)")
-    return contacts
 
 
 def _record(api, stn_id) -> dict | None:
@@ -194,6 +155,10 @@ def _entry(row: dict, record: dict | None) -> dict:
     entry["pat_code"] = pat if len(pat) == 6 and pat.isdigit() else None
     if record is None:
         entry.update(dict.fromkeys(DETAIL_KEYS + ("lat", "lng")))
+    phone = (record or {}).get("contact_phone")
+    entry["contact_name"] = (record or {}).get("contact_name") if phone else None
+    entry["contact_phone"] = phone
+    entry["contact_date"] = (record or {}).get("updated_at") if phone else None
     return entry
 
 

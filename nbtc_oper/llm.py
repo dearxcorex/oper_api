@@ -17,7 +17,8 @@ FIND_STATIONS_TOOL = {
         "นครราชสีมา or ชัยภูมิ. Returns short summaries; total counts "
         "every match, shown how many came back. When the answer comes from the saved "
         "register (as_of is set), each station has contact_name and contact_phone from its "
-        "latest inspection (contact_date), or null when it was never inspected, and lat/lng "
+        "station record (contact_date: when the record was last updated), or null when it "
+        "has none, and lat/lng "
         "(the register's coordinates, null when it has none); a live answer carries lat/lng "
         "only with details."
     ),

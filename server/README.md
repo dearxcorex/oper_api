@@ -19,7 +19,7 @@ search, and walks the portal live for at most 20 seconds otherwise.
 The saved register is rebuilt at 03:00 on the 1st of every month by `oper-api-register.timer`, or on
 demand with `POST /refresh` (about 30 minutes either way). A lock file keeps the
 two from running at once. Only the BCS and OPER data sources are saved, with each station's
-contact phone from its latest inspection. A build whose walk comes back incomplete
+coordinator phone from its station record. A build whose walk comes back incomplete
 fails and leaves the previous copy in place; the timer's failures show in
 `journalctl -u oper-api-register`, a refresh's in `journalctl -u oper-api`.
 A refresh uses its own portal login, so questions keep being answered while it

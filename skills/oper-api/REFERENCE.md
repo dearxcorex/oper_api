@@ -41,8 +41,9 @@ The answer comes from one of two places:
   and for a search with no place, which gets those two provinces, named in
   `provinces`. Answers come back instantly with `complete: true` and `as_of`
   set to the build time. Every station carries `lat`/`lng` and
-  `contact_name`/`contact_phone`/`contact_date` (taken from its latest
-  inspection that has a phone). `details` is free. The copy is rebuilt on the
+  `contact_name`/`contact_phone`/`contact_date` (the coordinator on its
+  station record, and the date that record was last updated; mostly null for
+  BCS stations). `details` is free. The copy is rebuilt on the
   1st of each month.
 - **A live portal walk.** This is used for anywhere else, or any other
   `source`. The walk is cut off at 20 seconds. A walk cut short answers

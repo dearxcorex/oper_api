@@ -98,10 +98,10 @@ record keeps the untranslated portal fields under `raw`.
 - **Saved register.** `register.build(api)` walks the station register for the
   BCS and OPER data sources (`register.SOURCES`) across the area (walks by province
   come back short), dedupes on StnID and fetches each station's record for its
-  PATCode, licence and operator. The register has no phone numbers for its
-  stations, so the build also walks the provinces' inspections and keeps each
-  station's contact name and phone from its latest inspection that has one
-  (`contact_name`, `contact_phone`, `contact_date`); these and the record's
+  PATCode, licence, operator and coordinator's name and phone (`contact_name`,
+  `contact_phone`, and `contact_date`, the date the record was last updated;
+  the same fields the add-inspection form fills in when a station is picked).
+  OPER stations mostly have a phone; BCS stations mostly don't. These and the record's
   coordinates (`lat`, `lng`) show on every summary from the copy, without `details`. `find_stations` and the copy both default to
   BCS and OPER together; a search for another source goes to the portal. Only นครราชสีมา and
   ชัยภูมิ are kept (`places.OFFICE_PROVINCES`); a station whose address names another province, such

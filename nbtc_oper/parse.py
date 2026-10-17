@@ -367,8 +367,16 @@ def shape_station(record: dict) -> dict:
         "pat_code": record.get("PATCode"),
         "source": record.get("SrcData"),
         "updated_at": from_dotnet_date(record.get("DtUpd")),
+        "contact_name": _blank_to_none(record.get("CoopNa")),
+        "contact_phone": _blank_to_none(record.get("CoopTel")),
         "raw": record,
     }
+
+
+def _blank_to_none(value):
+    """A text field, or None for the portal's blanks and dashes."""
+    text = (value or "").strip()
+    return None if text in ("", "-", "0") else text
 
 
 def station_search_provinces(html: str) -> list[str]:

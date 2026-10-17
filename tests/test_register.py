@@ -98,7 +98,6 @@ class FakePortal:
         self.incomplete = incomplete
         self.requests_sent = 0
         self.opened = []
-        self.inspected = []
         self.session = object()
 
     def places(self):
@@ -116,30 +115,6 @@ class FakePortal:
         return {"rows": rows, "total": len(rows) + (source == self.incomplete),
                 "complete": source != self.incomplete}
 
-    # Inspections, newest first once sorted: station 9 has two (the newer one
-    # with no phone), station 10 one whose form cannot be read.
-    INSPECTIONS = [
-        {"chk_id": 1, "station_code": "S9", "inspected_date": "2024-01-10"},
-        {"chk_id": 2, "station_code": "S9", "inspected_date": "2026-03-01"},
-        {"chk_id": 3, "station_code": "S9", "inspected_date": "2022-05-05"},
-        {"chk_id": 4, "station_code": "S10", "inspected_date": "2026-02-01"},
-    ]
-    FORMS = {
-        1: {"stn_id": 9, "contact_name": "สมชาย", "contact_phone": "081-111-1111", "inspected_date": "2024-01-10"},
-        2: {"stn_id": 9, "contact_name": "สมชาย", "contact_phone": None, "inspected_date": "2026-03-01"},
-        3: {"stn_id": 9, "contact_name": "เก่า", "contact_phone": "044-000000", "inspected_date": "2022-05-05"},
-    }
-
-    def search(self, *, province, **_):
-        rows = self.INSPECTIONS if province == "36" else []
-        return {"rows": rows, "total": len(rows), "complete": True}
-
-    def inspection(self, chk_id, *, with_station=True, fresh=False):
-        self.inspected.append(chk_id)
-        if chk_id not in self.FORMS:
-            raise NbtcError("no inspection form")
-        return self.FORMS[chk_id]
-
     def _alternate_session(self):
         return "alternate"
 
@@ -149,7 +124,11 @@ class FakePortal:
             return {"pat_code": "100101", "licence_no": "L", "operator": "O"}
         if stn_id == 10 and _session != "alternate":
             raise NbtcError("empty")
-        return {"pat_code": "360101", "licence_no": "L", "operator": "O", "lat": 15.0, "lng": 102.0}
+        record = {"pat_code": "360101", "licence_no": "L", "operator": "O", "lat": 15.0, "lng": 102.0,
+                  "contact_name": None, "contact_phone": None, "updated_at": "2025-06-01"}
+        if stn_id == 9:
+            record.update(contact_name="สมชาย", contact_phone="081-111-1111")
+        return record
 
 
 def test_build_dedupes_across_sources_and_tries_the_other_login():
@@ -161,13 +140,18 @@ def test_build_dedupes_across_sources_and_tries_the_other_login():
     assert {s["stn_id"]: s["sources"] for s in copy["stations"]}[9] == ["WEB", "BCS", "BCS2"]
 
 
-def test_build_takes_each_stations_phone_from_its_latest_inspection_that_has_one():
-    portal = FakePortal()
-    copy = register.build(portal, log=lambda _: None)
+def test_build_takes_each_stations_phone_from_its_record():
+    copy = register.build(FakePortal(), log=lambda _: None)
     contact = {s["stn_id"]: {k: s[k] for k in register.CONTACT_KEYS} for s in copy["stations"]}
-    assert contact[9] == {"contact_name": "สมชาย", "contact_phone": "081-111-1111", "contact_date": "2024-01-10"}
-    assert contact[10] == dict.fromkeys(register.CONTACT_KEYS)  # its only form was unreadable
-    assert portal.inspected == [2, 4, 1]  # newest first; 3 skipped once 9 had a phone
+    assert contact[9] == {"contact_name": "สมชาย", "contact_phone": "081-111-1111", "contact_date": "2025-06-01"}
+    assert contact[10] == dict.fromkeys(register.CONTACT_KEYS)  # its record has no phone
+
+
+def test_shape_station_keeps_the_coordinators_name_and_phone():
+    shaped = parse.shape_station({"StnID": 1, "CoopNa": " สมชาย ", "CoopTel": "081-111-1111"})
+    assert (shaped["contact_name"], shaped["contact_phone"]) == ("สมชาย", "081-111-1111")
+    blank = parse.shape_station({"StnID": 2, "CoopNa": "-", "CoopTel": ""})
+    assert (blank["contact_name"], blank["contact_phone"]) == (None, None)
 
 
 def test_contacts_show_without_details(copy, gazetteer):
