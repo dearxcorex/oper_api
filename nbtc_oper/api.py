@@ -1,17 +1,61 @@
 """The public surface: inspection search, inspection detail, station search and record,
-and the inspection form's code tables."""
+the inspection form's code tables, and the งานคุ้มครอง content-inspection search."""
 
 import json
 import time
+from collections import Counter
+from datetime import date, datetime
 
 from . import parse, places
 from .client import NbtcError, Session
-from .dates import to_portal_date
+from .dates import BANGKOK, to_portal_date
 
 SEARCH_PATH = "/Oper/ISO/11/FF11ChkSch.aspx"
 DETAIL_PATH = "/Oper/ISO/11/FF11Chk.aspx"
 STATION_PATH = "/Oper/ISO/STN/dSTN.ashx"
 STATION_SEARCH_PATH = "/Oper/ISO/STN/mStnSch.aspx"
+# งานคุ้มครอง: content and advertising inspections of radio stations. Not the
+# same work as งานตรวจสอบ (SEARCH_PATH above), and never mixed with it.
+CONTENT_SEARCH_PATH = "/Oper/ISO/28/FF28ChkSch.aspx"
+
+# FF28ChkSch.aspx's ผลการตรวจสอบ choices (ChkResuID), label -> code.
+CONTENT_RESULTS = {
+    "เนื้อหาโฆษณา อาหาร": 1,
+    "เนื้อหาล้มล้างการปกครองในระบอบประชาธิปไตย": 2,
+    "เนื้อหาที่กระทบต่อความมั่นคงของรัฐ": 3,
+    "ไม่พบการกระทำผิด": 4,
+    "อาจจะเข้าข่ายการกระทำผิด ,อื่นๆ": 5,
+    "ไม่พบการออกอากาศ": 6,
+    "เนื้อหาโฆษณา ยา": 7,
+    "เนื้อหาโฆษณา เครื่องสำอาง": 8,
+    "เนื้อหาโฆษณา เครื่องมือแพทย์": 9,
+    "เนื้อหาโฆษณา ยาเสพติด": 10,
+    "เนื้อหาโฆษณา วัตถุอันตราย": 11,
+    "เนื้อหามีการกระทำซึ่งเข้าลักษณะลามกอนาจาร": 12,
+    "เนื้อหามีผลกระทบต่อจิตใจหรือสุขภาพของประชาชน": 13,
+    "เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ (การประกาศชื่อสถานี ความถี่ฯ)": 14,
+    "เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ "
+    "(การหารายได้ของสถานีวิทยุกรจายเสียงประเภทกิจการสาธารณะ/ชุมชน)": 15,
+    "เนื้อหาโฆษณาผลิตภัณฑ์ทางการเกษตร": 16,
+    "เนื้อหาโฆษณา ผลิตภัณฑ์สมุนไพร": 17,
+}
+# Results that are not a wrongdoing; every other result flags its station.
+NOT_VIOLATIONS = {"ไม่พบการกระทำผิด", "ไม่พบการออกอากาศ"}
+# A result= choice the portal has no code for: any is_violation() result.
+ANY_VIOLATION = "พบการกระทำผิด"
+# FF28ChkSch.aspx's source types (SrcTypeID), label -> code.
+CONTENT_SOURCE_TYPES = {
+    "เรื่องร้องเรียน": 1,
+    "ตรวจตามแผน": 2,
+    "ติดตามการแก้ไข": 3,
+    "ตามการร้องขอ": 4,
+    "ตรวจสอบซ้ำภายหลังมีคำสั่งเอาเปรียบฯ": 5,
+    "ตรวจสอบตามมติ กสทช.": 6,
+    "ตรวจสอบพบ": 7,
+    "ตรวจซ้ำตามคำสั่งระงับการออกอากาศฯ": 8,
+    "ตรวจซ้ำตามคำสั่งระงับฯ": 9,
+    "ตรวจสอบเฝ้าระวังหลังมีคำสั่งระงับฯ": 10,
+}
 
 # A result set that pages unstably is re-walked until every row is seen.
 MAX_PASSES = 3
@@ -107,15 +151,72 @@ def build_station_query(
     ]
 
 
+def build_content_query(
+    *,
+    inspected_from=None,
+    inspected_to=None,
+    province_id="0",
+    district_id="0",
+    subdistrict_id="0",
+    station_name="",
+    programme="",
+    freq_from="",
+    freq_to="",
+    result_id=0,
+    source_type_id=0,
+    region_id=5,
+    area_id=8,
+) -> list[tuple[str, str]]:
+    """Search filters -> the query string FF28ChkSch.aspx's own form produces."""
+    return [
+        ("RegID", str(region_id)),
+        ("AreaID", str(area_id)),
+        ("AreaID_raw", "0"),
+        ("SrcTypeID", str(source_type_id)),
+        ("sProv1", str(province_id)),
+        ("sAumphoe1", str(district_id)),
+        ("sTambol1", str(subdistrict_id)),
+        ("ChkResuID", str(result_id)),
+        ("Process", ""),
+        ("Doc03", ""),
+        ("RemChkNa", ""),
+        ("StaNa", station_name or ""),
+        ("FreqMhz1", str(freq_from if freq_from is not None else "")),
+        ("FreqMhz2", str(freq_to if freq_to is not None else "")),
+        ("ZipCode", ""),
+        ("FDt", to_portal_date(inspected_from)),
+        ("TDt", to_portal_date(inspected_to)),
+        ("FDtC", ""),
+        ("TDtC", ""),
+        ("SiteCode", ""),
+        ("ProgNa", programme or ""),
+    ]
+
+
+def is_violation(result) -> bool:
+    """A งานคุ้มครอง result that flags its station; a blank one does not."""
+    return bool(result) and result not in NOT_VIOLATIONS
+
+
+def bangkok_today() -> date:
+    """Today's date in Thailand, whatever the machine's timezone."""
+    return datetime.now(BANGKOK).date()
+
+
+def _portal_frequency(value) -> str:
+    return "" if value in (None, "") else f"{float(value):.2f}"
+
+
 def station_key(row: dict):
     """What tells one station from another among inspection-search rows.
 
     The rows carry no StnID. The station code does the job when there is one;
-    an unlicensed station has none and falls back to name, frequency, licence.
+    an unlicensed station has none and falls back to name, frequency, licence
+    (the licensee on งานคุ้มครอง rows, which have no licence number).
     """
     if row.get("station_code"):
         return row["station_code"]
-    return (row.get("station_name"), row.get("frequency_mhz"), row.get("licence_no"))
+    return (row.get("station_name"), row.get("frequency_mhz"), row.get("licence_no") or row.get("licensee"))
 
 
 class NbtcOper:
@@ -240,6 +341,109 @@ class NbtcOper:
                 parse.compact_inspection(row, times[key]) for key, row in listed[:limit]
             ],
             "truncated": len(listed) > limit,
+        }
+
+    def content_search(
+        self,
+        *,
+        province=None,
+        district=None,
+        subdistrict=None,
+        max_pages: int | None = None,
+        fresh: bool = False,
+        **filters,
+    ) -> dict:
+        """Every งานคุ้มครอง inspection matching the filters, all pages, deduped on chk_id.
+
+        See build_content_query() for the full filter list.
+        """
+        if province or district or subdistrict:
+            prov, dist, sub = places.resolve(self.places(), province, district, subdistrict)
+            filters.update(province_id=prov, district_id=dist, subdistrict_id=sub)
+        return self._walk(
+            CONTENT_SEARCH_PATH, build_content_query(**filters), parse.parse_content_search_page,
+            "chk_id", max_pages, fresh,
+        )
+
+    def content_inspections(
+        self,
+        *,
+        inspected_from=None,
+        inspected_to=None,
+        frequency=None,
+        freq_from=None,
+        freq_to=None,
+        station_name=None,
+        programme=None,
+        province=None,
+        district=None,
+        result=None,
+        source_type=None,
+        limit: int = 25,
+        fresh: bool = False,
+    ) -> dict:
+        """งานคุ้มครอง inspections grouped by station, shaped for a chat model's tool call.
+
+        Each station lists its inspections newest first, date and ผลการตรวจสอบ
+        side by side. Stations with any is_violation() result are flagged and
+        listed first, then the rest by latest inspection.
+        inspected_from defaults to 1 January this year. frequency is an exact
+        match; freq_from/freq_to a range. result is a CONTENT_RESULTS label
+        or ANY_VIOLATION, which is filtered here as the portal has no code
+        for it; source_type a CONTENT_SOURCE_TYPES label (default: all).
+        Walks every page.
+        """
+        if result not in (None, "", ANY_VIOLATION) and result not in CONTENT_RESULTS:
+            raise ValueError(f"unknown result {result!r}; choices: {[*CONTENT_RESULTS, ANY_VIOLATION]}")
+        if source_type not in (None, "") and source_type not in CONTENT_SOURCE_TYPES:
+            raise ValueError(f"unknown source_type {source_type!r}; choices: {list(CONTENT_SOURCE_TYPES)}")
+        inspected_from = inspected_from or bangkok_today().replace(month=1, day=1).isoformat()
+        if isinstance(inspected_from, date):
+            inspected_from = inspected_from.isoformat()
+        if isinstance(inspected_to, date):
+            inspected_to = inspected_to.isoformat()
+        if frequency not in (None, ""):
+            freq_from = freq_to = frequency
+
+        walked = self.content_search(
+            fresh=fresh,
+            inspected_from=inspected_from,
+            inspected_to=inspected_to,
+            freq_from=_portal_frequency(freq_from),
+            freq_to=_portal_frequency(freq_to),
+            station_name=station_name or "",
+            programme=programme or "",
+            province=province,
+            district=district,
+            result_id=CONTENT_RESULTS.get(result, 0),
+            source_type_id=CONTENT_SOURCE_TYPES.get(source_type, 0),
+        )
+        rows = walked["rows"]
+        if result == ANY_VIOLATION:
+            rows = [r for r in rows if is_violation(r.get("result"))]
+            inspections = len(rows)
+        else:
+            inspections = walked["total"] if walked["total"] is not None else len(rows)
+
+        grouped = {}
+        for row in rows:
+            grouped.setdefault(station_key(row), []).append(row)
+        stations = [parse.compact_content_station(group, is_violation) for group in grouped.values()]
+        stations.sort(key=lambda s: s["latest_date"] or "", reverse=True)
+        stations.sort(key=lambda s: not s["flagged"])  # stable: flagged first, each newest first
+
+        by_result = Counter(row.get("result") or "" for row in rows)
+        return {
+            "work": "งานคุ้มครอง",
+            "inspected_from": inspected_from,
+            "inspected_to": inspected_to,
+            "inspections": inspections,
+            "stations": len(stations),
+            "flagged_stations": sum(s["flagged"] for s in stations),
+            "by_result": dict(by_result),
+            "complete": walked["complete"],
+            "station_list": stations[:limit],
+            "truncated": len(stations) > limit,
         }
 
     def station_search(

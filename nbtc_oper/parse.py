@@ -25,6 +25,26 @@ SEARCH_COLUMNS = {
     "หนังสือแจ้งเตือน/วันที่": "warning_doc",
     "สถานะ": "status",
 }
+# FF28ChkSch.aspx, the งานคุ้มครอง (content and advertising) inspections.
+CONTENT_COLUMNS = {
+    "ลำดับ": "no",
+    "วันที่ตรวจสอบ": "inspected_date",
+    "สำนักงาน กสทช.ภาค": "region",
+    "เขต": "area",
+    "ชื่อผู้ได้รับใบอนุญาต": "licensee",
+    "รหัสสถานี": "station_code",
+    "ชื่อสถานี": "station_name",
+    "จังหวัด": "province",
+    "อำเภอ": "district",
+    "ตำบล": "subdistrict",
+    "ที่ตั้ง": "location",
+    "ความถี่": "frequency_mhz",
+    "รายการ": "programme",
+    "ผลการตรวจสอบ": "result",
+    "เครื่องมือวัด": "instrument",
+    "ขั้นตอนการดำเนินการ": "process",
+    "สถานะ": "status",
+}
 _DATE_KEYS = {"recorded_date", "inspected_date"}
 _PLACE_PREFIX = {"province": "จ.", "district": "อ.", "subdistrict": "ต."}
 
@@ -129,7 +149,17 @@ def _headers(table) -> list[str]:
 
 
 def parse_search_page(html: str) -> dict:
-    """One results page -> {"total", "pages", "rows"}."""
+    """One FF11 (งานตรวจสอบ) results page -> {"total", "pages", "rows"}."""
+    return _parse_results(html, SEARCH_COLUMNS, "FF11Chk.aspx")
+
+
+def parse_content_search_page(html: str) -> dict:
+    """One FF28 (งานคุ้มครอง) results page -> {"total", "pages", "rows"}."""
+    return _parse_results(html, CONTENT_COLUMNS, "FF28Chk.aspx")
+
+
+def _parse_results(html: str, columns: dict, detail_page: str) -> dict:
+    """A search results table: one row per inspection, keyed by its ChkID link."""
     soup = BeautifulSoup(html, "lxml")
     total, pages = _total_and_pages(soup)
 
@@ -137,9 +167,9 @@ def parse_search_page(html: str) -> dict:
     table = soup.select_one("table.table-bordered")
     if table and table.find("thead"):
         headers = _headers(table)
-        header_keys = {k.replace(" ", ""): v for k, v in SEARCH_COLUMNS.items()}
+        header_keys = {k.replace(" ", ""): v for k, v in columns.items()}
         for tr in table.select("tbody tr") or table.find_all("tr")[1:]:
-            link = tr.select_one('a[href*="FF11Chk.aspx?ChkID="]')
+            link = tr.select_one(f'a[href*="{detail_page}?ChkID="]')
             if not link:
                 continue
             row = {"chk_id": int(re.search(r"ChkID=(\d+)", link["href"]).group(1))}
@@ -260,6 +290,38 @@ def compact_inspection(row: dict, inspections: int = 1) -> dict:
         "warning_doc_date": row.get("warning_doc_date"),
         "chk_id": row.get("chk_id"),
         "inspections": inspections,
+    }
+
+
+def compact_content_station(rows: list[dict], is_violation) -> dict:
+    """One station's งานคุ้มครอง rows -> a short summary for a chat model.
+
+    checks pairs each inspection's date with its result, newest first;
+    flagged means is_violation(result) holds for at least one of them.
+    """
+    rows = sorted(rows, key=lambda r: r.get("inspected_date") or "", reverse=True)
+    latest = rows[0]
+    return {
+        "station_name": latest.get("station_name"),
+        "station_code": latest.get("station_code"),
+        "frequency_mhz": latest.get("frequency_mhz"),
+        "licensee": latest.get("licensee"),
+        "province": latest.get("province"),
+        "district": latest.get("district"),
+        "flagged": any(is_violation(r.get("result")) for r in rows),
+        "inspections": len(rows),
+        "latest_date": latest.get("inspected_date"),
+        "checks": [
+            {
+                "inspected_date": r.get("inspected_date"),
+                "result": r.get("result"),
+                "programme": r.get("programme"),
+                "process": r.get("process"),
+                "status": r.get("status"),
+                "chk_id": r.get("chk_id"),
+            }
+            for r in rows
+        ],
     }
 
 

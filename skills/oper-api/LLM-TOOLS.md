@@ -52,9 +52,19 @@ before the call: clamp `limit` and drop a `source`/`result` that isn't in
 - Explain the counts: `inspections` is the headline number, and `stations`
   (distinct) goes in brackets.
 
+### งานตรวจสอบ and งานคุ้มครอง
+
+Inspections are two kinds of work, never mixed: งานตรวจสอบ (`countStations`,
+technical checks) and งานคุ้มครอง (`contentInspections`, content and adverts).
+Name the work in each tool's description, and add to the system prompt: if the
+user hasn't said or clearly implied which (โฆษณา, เนื้อหา and รายการ mean
+งานคุ้มครอง), ask "งานตรวจสอบ หรือ งานคุ้มครอง?" before calling either tool. For
+งานคุ้มครอง answers, lead with each station's dates and results, flagged ones
+first. `nbtc_oper.llm` in oper_api has the wording to copy.
+
 On `OperError`, return a tool error with `detail`, so the model can fix a
 place name and retry.
 
 A working example is fm-station-tracker's `src/services/askTools.ts`
-(`findOperStations`, `countOperInspections`) with `src/utils/askMessage.ts`
+(`findOperStations`, `countOperInspections`; a `contentInspections` tool is still to be added) with `src/utils/askMessage.ts`
 rendering the details.

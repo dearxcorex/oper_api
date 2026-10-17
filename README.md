@@ -47,12 +47,13 @@ api.search(reported_from="2026-01-01", source_type_id=2, max_pages=1)["total"]  
 options = api.form_options()          # code tables: areas, issues, inspectors, test_equipment, …
 api.find_stations(district="ภูเขียว", source="BCS")   # short summaries for a chat model
 api.find_stations(frequency=91.75, details=True)     # + licence, expiry, operator
+api.content_inspections(frequency=88)                # งานคุ้มครอง: dates and results by station
 ```
 
-`nbtc_oper.llm` holds the station search and the inspection count (with its
-station list) as tool definitions in the Anthropic Messages format
-(`FIND_STATIONS_TOOL`, `COUNT_INSPECTIONS_TOOL`, `TOOLS`) and `run_tool(api, name, input)`
-to dispatch a call.
+`nbtc_oper.llm` holds the station search, the inspection count (with its
+station list) and the งานคุ้มครอง search as tool definitions in the Anthropic Messages format
+(`FIND_STATIONS_TOOL`, `COUNT_INSPECTIONS_TOOL`, `CONTENT_INSPECTIONS_TOOL`, `TOOLS`) and
+`run_tool(api, name, input)` to dispatch a call.
 
 Dates are ISO in and out; the portal's Buddhist-era `dd/mm/yyyy` is converted
 at the edge. Places are Thai names (prefix optional) or portal codes. Every
@@ -118,6 +119,13 @@ record keeps the untranslated portal fields under `raw`.
   page and counts distinct stations: by station code, or by name, frequency
   and licence number for a row that has no code. Its `by_result` splits both
   counts by result (ตรงตามมาตรฐาน / ไม่ตรงตามมาตรฐาน); `result=` filters on the portal side.
+- **Two kinds of inspection work.** งานตรวจสอบ (technical checks) is `FF11ChkSch.aspx`:
+  `search()`, `count_stations()`. งานคุ้มครอง (content and adverts) is `FF28ChkSch.aspx`:
+  `content_search()`, `content_inspections()`, CLI `content`, `POST /content-inspections`.
+  They are never mixed; both LLM tools tell the model to ask "งานตรวจสอบ หรือ งานคุ้มครอง?"
+  when the question doesn't say. `content_inspections()` groups by station, flagged ones
+  (any result but ไม่พบการกระทำผิด / ไม่พบการออกอากาศ) first, and defaults to 1 January this
+  year. `result="พบการกระทำผิด"` (any wrongdoing) is filtered locally, as the portal can't.
 - **Scope.** The inspection search only lists stations somebody has inspected. `RegID=5`,
   `AreaID=8` (เขต 23) and `StnTypeID=4` (สถานีวิทยุกระจายเสียง) are defaults.
 

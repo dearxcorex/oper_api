@@ -1,12 +1,12 @@
 ---
 name: oper-api
-description: Connect a project to the NBTC OPER API (broadcast station search, inspection counts), including LLM tools over it.
+description: Connect a project to the NBTC OPER API (broadcast station search, inspection counts, งานคุ้มครอง content inspections), including LLM tools over it.
 ---
 
 # Connect to the NBTC OPER API
 
-The API answers station searches and inspection counts for NBTC เขต 23 over
-HTTP. The contract is in [`REFERENCE.md`](REFERENCE.md), and the client
+The API answers station searches, งานตรวจสอบ inspection counts and งานคุ้มครอง
+content inspections for NBTC เขต 23 over HTTP. The contract is in [`REFERENCE.md`](REFERENCE.md), and the client
 is [`operClient.ts`](operClient.ts). Copy the client; never write your own.
 
 ## 1. Check access
@@ -27,8 +27,8 @@ The token lives only in env and is read at runtime.
 Copy `operClient.ts` into the project's lib folder unchanged, apart from
 import style and env access if the project reads env differently. In
 non-TypeScript projects, port it one function per route and keep the
-`OperError` kinds. Call sites use `findStations`, `countStations` and
-`operHealth`. `refreshRegister` is admin-only, so wire it in only when the
+`OperError` kinds. Call sites use `findStations`, `countStations`,
+`contentInspections` and `operHealth`. `refreshRegister` is admin-only, so wire it in only when the
 developer asks for it.
 
 Handle at each call site:

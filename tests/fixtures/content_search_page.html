@@ -1,0 +1,2263 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    
+<title>NBTC OPERATION SYSTEM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<link rel="stylesheet" href="../../_inc/iconfont/style.css">
+<link rel="stylesheet" href="../../_inc/css/bootstrap.css">
+<link rel="stylesheet" href="../../_inc/css/bootstrap-select.min.css">
+<link rel="stylesheet" href="../../_inc/css/bootstrap-datepicker.css">
+<link rel="stylesheet" href="../../_inc/css/bootstrap-datepicker3.css">
+<link rel="stylesheet" href="../../_inc/css/style.css">
+<link rel="stylesheet" href="../../_inc/css/sweetalert2.min.css">
+<link rel="stylesheet" href="../../_inc.a/css/lightgallery.css">
+
+<link rel="stylesheet" href="../../_inc/css/bootstrap-timepicker.css">
+
+<script src="../../_inc/js/jquery-3.3.1.js"></script>
+<script src="../../_inc/js/popper.min.js"></script>
+<script src="../../_inc/js/bootstrap.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker-thai.js"></script>
+<script src="../../_inc/js/bootstrap-datepicker.th.js"></script>
+
+<script src="../../_inc/js/bootstrap-select.min.js"></script>
+
+<script type="text/javascript" src="../../_inc/js/core.js"></script>
+<script type="text/javascript" src="../../_inc/js/sweetalert2.min.js"></script>
+
+<link rel="stylesheet" href="../../_inc/css/fileinput.css">
+<script src="../../_inc/js/fileinput.js"></script>
+
+<script src="../../_inc/js/bootstrap-timepicker.js"></script>
+<script src="../../_inc/js/jquery.inputmask.bundle.js"></script>
+
+
+
+<style type="text/css">
+    .valid {
+        color: red;
+        margin-bottom: 0px;
+    }
+
+    .total-result {
+        font-size: 16px;
+    }
+</style>
+
+<script type="text/javascript">
+    var _menu = '';
+    function initWin() {
+        $('.iso-sidebar .iso-btn--togglemenu').click(function () {
+            $('.iso-container').addClass('active');
+        });
+        $('.iso-btn--togglemenu.togglemenu-outer').click(function () {
+            if ($(window).width() < 992 || _menu =="0") {
+                $('.iso-container').toggleClass('active');
+            } else {
+                $('.iso-container').removeClass('active');
+            }
+        });
+        if (_menu == "0") {
+            $('.iso-container').toggleClass('active');
+        }
+        $('.iso-icon--printer').parent().attr("target", "_blank");
+    }
+    $(function () {
+        $('select').attr("data-live-search", "true");
+        $('select').selectpicker();
+        $('.datepicker').datepicker();
+        $(".datepicker").inputmask({ "mask": "99/99/9999" });
+        $(".iso-btn--excel").click(function () {
+            window.open(location.href + "&export=xls");
+        });
+
+        $(".iso-btn--excel2").click(function () {
+            window.open(location.href + "&export=xls&xls=2");
+        });
+
+        $('.timepicker').timepicker({
+            'defaultTime': false,
+            'showMeridian': false,
+            'icons': {
+                'up': 'iso-icon--chevron-up',
+                'down': 'iso-icon--chevron-down'
+            }
+        });
+
+        initWin();
+
+        $('input[type="file"]').fileinput({
+            showPreview: false,
+            showUpload: false,
+            //browseOnZoneClick: true,
+            elErrorContainer: '#kartik-file-errors',
+            allowedFileExtensions: [],
+            browseLabel: 'เลือกไฟล์',
+            browseIcon: '<i class="iso-icon--folder"></i>',
+            removeLabel: 'ลบ',
+            removeIcon: '<i class="iso-icon--trash-2"></i>',
+            previewFileIcon: '<i class="iso-icon--trash-2"></i>',
+            msgPlaceholder: 'เลือกไฟล์ที่ต้องการ'
+            //uploadUrl: '/site/file-upload-single'
+        });
+        if (_fno == "add") {
+            $(".datepicker").each(function () {
+                if ($(this).val() == "" && $(this).attr("data-date") != "none")
+                    $(this).val('17/10/2569');
+            });
+        }
+    })
+
+
+    function updateSubSelect(ctlid, subid, selected) {
+        var val = $("#" + ctlid).val();
+        $("#" + subid).prop("disabled", true);
+        $("#" + subid).html("<option value='0'>กรุณาเลือก</option>");
+        $("#" + subid + "_raw > option").each(function () {
+            var vals = this.value.split(',');
+            if (vals[0] != "0" && vals[0] == val) {
+                var valx = vals[1];
+
+                $("#" + subid).append("<option value='" + valx + "' " + (selected && selected == valx ? " selected" : "") + ">" + this.text + "</option>");
+                $("#" + subid).prop("disabled", false);
+            }
+        });
+        $("#" + subid).selectpicker('refresh');
+    }
+
+
+    window.msgbox_save = function (rid, url, t) {
+        
+        if (rid > 0) {
+           // alert(url + " " + location);
+            if (parent && url == "close" && (parent.location.href + "").indexOf("fno=add") > -1) {
+               
+                parent.closeDialog();
+                return;
+            }
+
+
+            swal({
+                title: t ? t : "บันทึกข้อมูลเรียบร้อย",
+                text: "",
+                type: 'success',
+                confirmButtonClass: 'btn-primary',
+                confirmButtonText: 'ตกลง',
+            }).then(function () {
+                if (!url) return;
+                if (url == 'reload') {
+                    reloadPage(false);
+                    return;
+                }
+                if (url == 'close' || url == 'closesave') {
+                    parent.closeDialog();
+                    return;
+                }
+                if (url == 'reload-parent') {
+                    reloadPage(true)
+                    return;
+                }
+                location.href = url;
+            });
+        }
+        else if (rid == -1)
+            swal({
+                title: t ? t : "ไม่สามารถทำรายการได้/ข้อมูลไม่ถูกต้อง",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+            });
+        else if (rid == -2)
+            swal({
+                title: t ? t : "ข้อมูลซ้ำกับในระบบ",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+
+            });
+        else if (rid == -22)
+            swal({
+                title: t ? t : "ข้อมูลซ้ำกับในระบบ",
+                text: "",
+                showCancelButton: true,
+                type: 'warning',
+                cancelButtonText: 'ตกลง',
+                confirmButtonText: 'ดูข้อมูล',
+                confirmButtonClass: 'btn-primary'
+            }).then(function (result) {
+                if (result.value) {
+                    window.open(url);
+                }
+            });
+        else if (rid == -3)
+            swal({
+                title: t ? t : "ข้อมูลผิดพลาด",
+                text: "",
+                type: 'warning',
+                confirmButtonText: 'ตกลง',
+                confirmButtonClass: 'btn-primary'
+            });
+    }
+
+    function delItem(fn, id, val, url, qs) {
+        swal({
+            title: 'ต้องการลบข้อมูลนี้',
+            text: "หากลบแล้วจะไม่สามารถกู้คืนได้",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+            cancelButtonText: '<i></i>ยกเลิก',
+            confirmButtonClass: 'btn-primary',
+        }).then(function (result) {
+            if (result.value) {
+                $.ajax({
+                    type: 'POST',
+                    url: "../data/dDelItem.ashx" + (qs ? "?" + qs : ""),
+                    data: { sp: fn, id: id, val: val },
+                    cache: false,
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.result == "OK") {
+                            swal({
+                                title: 'ลบข้อมูลสำเร็จ',
+                                text: "ข้อมูลถูกลบแล้ว",
+                                type: 'success',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            }).then(function () {
+                                if (!url) return;
+                                if (url == 'reload') {
+                                    reloadPage(false);
+                                    return;
+                                }
+                                if (url == 'close') {
+                                    parent.closeDialog();
+                                    return;
+                                }
+                                if (url == 'reload-parent') {
+                                    reloadPage(true)
+                                    return;
+                                }
+
+                                location.href = url;
+                            });
+                        } else {
+                            swal({
+                                title: 'ลบข้อมูลไม่สำเร็จ',
+                                type: 'error',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                    }
+                });
+            }
+        });
+    }
+
+    function reloadPage(isparent) {
+        if (isparent)
+            parent.location.href = parent.location.href;
+        else
+            location.href = location.href
+    }
+
+    function apvItem(ff, id) {
+        swal({
+            title: 'อนุมัติข้อมูลนี้',
+            text: "",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+            cancelButtonText: '<i></i>ยกเลิก',
+            confirmButtonClass: 'btn-primary',
+        }).then(function (result) {
+            if (result.value) {
+                $.ajax({
+                    type: 'POST',
+                    url: "../data/dApvItem.ashx",
+                    data: { ff: ff, id: id },
+                    cache: false,
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.result == "OK") {
+                            swal({
+                                title: 'อนุมัติเรียบร้อยแล้ว',
+                                text: "",
+                                type: 'success',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            }).then(function () {
+                                location = location.href;
+                            });
+                        } else {
+                            swal({
+                                title: 'อนุมัติไม่สำเร็จ',
+                                type: 'error',
+                                confirmButtonText: 'ตกลง',
+                                confirmButtonClass: 'btn-primary'
+                            });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                    }
+                });
+            }
+        });
+    }
+
+    var _fno = '';
+
+    function setPageFno() {
+        if (_fno != "add" && _fno != "edit") {
+            $(".x-det").show();
+            $(".x-add").hide();
+            //$(".mrta-title span").html("");
+            $(".form-group").each(function () {
+                var f = $(this);
+                var t = "";
+                //if(f.find("select").prop("id")) alert(f.html());
+
+                if (f.find("textarea").prop("id")) {
+                    t = f.find("textarea").val(); f.find("textarea").hide();
+                }
+                else if (f.find("input").prop("id") && f.find("input").prop("type") == "text") { t = f.find("input").val(); f.find("input").hide(); }
+                else if (f.find("select").prop("id") && f.find("select").prop("multiple")) { t = f.find("select option:selected").toArray().map(item => item.text).join(", "); f.find(".bootstrap-select").hide(); }
+                else if (f.find("select").prop("id")) { t = f.find("select option:selected").text(); f.find(".bootstrap-select").hide(); }
+
+                if (t == "กรุณาเลือก") t = "";
+                t = t.replace("กรุณาเลือก", "");
+                t = t.replace("กรุณาเลือก", "");
+                t = t.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                f.find("p>b").html("");
+                f.append('<p><b>' + t + '&nbsp;</b></p>');
+
+
+            });
+            $("input[type=checkbox]").attr("onclick", "return false");
+            $("input[type=radio]").attr("onclick", "return false");
+        } else {
+            $(".x-add").show();
+            $(".x-det").hide();
+            // $(".mrta-title span").html(_fno == "edit"?"แก้ไขข้อมูล":"เพิ่มข้อมูล");
+        }
+        //setIsAdd();
+    }
+
+    var __qParams = "";
+    function schData() {
+        var parms = []
+        $("#FormSch select").each(function () {
+            parms.push(this.id + "=" + this.value.trim());
+        });
+        $("#FormSch input[type=text]").each(function () {
+            parms.push(this.id + "=" + escape(this.value.trim()));
+        });
+        location = location.toString().replace(location.search, "") + "?" + parms.join('&') + "&" + __qParams;
+    }
+
+    function schDataPrint(src) {
+        var Ids = []
+        $('input[name=chkIds]:checked').each(function () {
+            Ids.push(this.value)
+        });
+
+        window.open(src + location.search + "&IDs=" + Ids.join(','));
+    }
+    function schDataPrintPdf(src, p) {
+        var Ids = []
+        $('input[name=chkIds]:checked').each(function () {
+            Ids.push(this.value)
+        });
+
+        pdf(src + location.search + "&IDs=" + Ids.join(','), p);
+    }
+
+
+    var lg;
+    function openDialog(src) {
+        lg = $(this).lightGallery({
+            width: '700px',
+            height: '470px',
+            dynamic: true,
+            mode: 'lg-fade',
+            addClass: 'fixed-size',
+            counter: false,
+            download: false,
+            startClass: '',
+            enableSwipe: false,
+            enableDrag: false,
+            backdropDuration: 500,
+            dynamicEl: [{
+                "iframe": true,
+                "src": src,
+            }]
+        });
+    }
+
+    function loadItemData(div, url, del) {
+        if (_fno != "add" && _fno != "edit")
+            url += "&det=1";
+        if (del) {
+            url += del;
+            swal({
+                title: 'ต้องการลบข้อมูลนี้',
+                text: "หากลบแล้วจะไม่สามารถกู้คืนได้",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="btn-primary"></i>ตกลง',
+                cancelButtonText: '<i></i>ยกเลิก',
+                confirmButtonClass: 'btn-primary',
+            }).then(function (result) {
+                if (result.value) {
+                    loadItemData2(div, url);
+                }
+            }
+            );
+        }
+        else {
+            loadItemData2(div, url);
+        }
+    }
+
+    function loadItemData2(div, url) {
+        // window.open(url);
+        $("#" + div).load(url, {},
+            function () {
+                if (typeof (loadItemData_done) != "undefined")
+                    loadItemData_done();
+            });
+    }
+
+    function rid() {
+        var text = "";
+        var possible = "0123456789";
+
+        for (var i = 0; i < 8; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
+
+
+    function openModalDialog(src) {
+        $('#modalDialog iframe').prop("src", src);
+        $('#modalDialog').modal('show');
+    }
+
+    
+    window.closeDialog = function () {
+       $('#modalDialog').modal('hide');
+    };
+    
+
+    function pdf(url, paper) {
+        window.open("../Report/PDF.aspx?" + (paper ? "paper=" + paper + "&" : "") + "url=" + escape(url));
+    }
+
+    function openProfile() {
+        openModalDialog("../Main/mProfile.aspx?r=" + rid());
+    }
+    function pdfms(url, paper) {
+        swal({
+            html: "กรุณาเลือก Map source : <select id='maptype_src'>" + $("#iMap").contents().find("#maptype_src").html() + "</select>",
+            //type: 'question',
+            confirmButtonClass: 'btn-primary',
+            confirmButtonText: 'ตกลง',
+            cancelButtonText: 'ยกเลิก',
+            showCancelButton: true
+        }).then(function (result) {
+            if (result.value) {
+                url += "&mapsrc=" + $("#maptype_src").val();
+                window.open("../Report/PDF.aspx?" + (paper ? "paper=" + paper + "&" : "") + "url=" + escape(url));
+            }
+        });
+        
+    }
+    function printms(url) {
+        
+        swal({
+            html: "กรุณาเลือก Map source : <select id='maptype_src'>" + $("#iMap").contents().find("#maptype_src").html() + "</select>",
+            //type: 'question',
+            confirmButtonClass: 'btn-primary',
+            confirmButtonText: 'ตกลง',
+            cancelButtonText: 'ยกเลิก',
+            showCancelButton: true
+        }).then(function (result) {
+            if (result.value)
+                window.open(url + "&mapsrc=" + $("#maptype_src").val());
+        });
+    }
+</script>
+
+
+     <script language=javascript src="../../_inc/js/dpv.js"></script>
+     <script language=javascript src="../../_inc/js/pvscp.js"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            updateSubSelect('RegID', 'AreaID', '8');
+            $("#RegID").change(function () {
+                updateSubSelect(this.id, 'AreaID');
+            });
+
+            setPATZ();
+            if (!_IsISO28ChkEdit)
+                $(".p-edit").hide();
+        });
+
+        function setPATZ() {
+            setProv('sProv1', '00');
+            setAumphoe('sAumphoe1', '00', '0000', 'sTambol1');
+            setTambol('sTambol1', '0000', '000000');
+
+            $("#sProv1").change(function () { setAumphoe('sAumphoe1', $("#sProv1").val(), '0', 'sTambol1'); });
+            $("#sAumphoe1").change(function () { setTambol('sTambol1', $("#sAumphoe1").val(), '0'); });
+            $("#sTambol1").change(function () { setZipCode('ZipCode', $("#sTambol1").val(), ""); });
+        }
+        function viewRepStat() {
+            var url = "FF28ChkStat.aspx" + location.search;
+            window.open(url);
+        }
+        function viewRepStatXls() {
+            var url = "FF28ChkRep.aspx" + location.search +"&export=xls";
+            window.open(url);
+        }
+    </script>
+</head>
+<body>
+    
+
+<nav class="navbar navbar-expand-lg fixed-top iso--navbar" style="z-index:10">
+    
+    <a class="navbar-brand" href="https://fmr.nbtc.go.th/NBTCROS">
+      <img src="../../_inc/asset/logo.png" alt="">
+      <p><b>NBTC</b> OPERATION SYSTEM</p>
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <!-- <ul class="navbar-nav mr-auto">
+        <li class="nav-item active">
+          <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Dropdown
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="#">Action</a>
+            <a class="dropdown-item" href="#">Another action</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#">Something else here</a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#">Disabled</a>
+        </li>
+      </ul> -->
+      <!-- <form class="form-inline my-2 my-lg-0">
+        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+      </form> -->
+
+      <ul class="navbar-nav iso--navbar-userinfo">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            <img src="../../_inc/asset/user.svg">
+            <p>นายภูวกฤต พลชิงชัย </p>
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="javascript:openProfile()">Profile</a>
+            <a class="dropdown-item" href="../../UR/Logout.aspx">Sign Out</a>
+            <!--a class="dropdown-item" href="#">Another action</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#">Something else here</a-->
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+    <div class="container-fluid iso-container">
+        <style>
+    .iso-heading h1 {
+        display: none;
+    }
+</style>
+
+<script type="text/javascript">
+    var _IsISO05SvyView = true;var _IsISO05SvyEdit = true;var _IsISO05CompView = true;var _IsISO05CompEdit = true;var _IsISO09PlanView = true;var _IsISO09PlanEdit = true;var _IsISO09ChkView = true;var _IsISO09ChkEdit = true;var _IsISO26ChkView = true;var _IsISO26ChkEdit = true;var _IsISO10FreqView = true;var _IsISO10FreqEdit = true;var _IsISO11ChkView = true;var _IsISO11ChkEdit = true;var _IsISO12ChkView = true;var _IsISO12ChkEdit = true;var _IsISO13ChkView = true;var _IsISO13ChkEdit = true;var _IsISO14RaidView = true;var _IsISO14RaidEdit = true;var _IsISO14CaseView = true;var _IsISO14CaseEdit = true;var _IsISO15RecView = true;var _IsISO15RecEdit = true;var _IsISO15ChkView = true;var _IsISO15ChkEdit = true;var _IsISO16ShopView = true;var _IsISO16ShopEdit = true;var _IsISO16PlanView = true;var _IsISO16PlanEdit = true;var _IsISO16ChkView = true;var _IsISO16ChkEdit = true;var _IsISO17StnView = true;var _IsISO17StnEdit = true;var _IsISO17RadView = true;var _IsISO17RadEdit = true;var _IsISO18RepView = true;var _IsISO18RepEdit = true;var _IsISO28ChkView = true;var _IsISO28ChkEdit = true;var _IsISO29ChkView = true;var _IsISO29ChkEdit = true;var _IsISOPPEquipView = true;var _IsISOPPEquipEdit = true;
+
+        $(function () {
+            $(".capmenu li").hide();
+                
+                    if (_IsISOPPEquipEdit) $(".IsISOPPEquip").show();
+                
+                    if (_IsISOPPEquipView) $(".IsISOPPEquip").show();
+                
+                    if (_IsISO29ChkEdit) $(".IsISO29Chk").show();
+                
+                    if (_IsISO29ChkView) $(".IsISO29Chk").show();
+                
+                    if (_IsISO28ChkEdit) $(".IsISO28Chk").show();
+                
+                    if (_IsISO28ChkView) $(".IsISO28Chk").show();
+                
+                    if (_IsISO18RepEdit) $(".IsISO18Rep").show();
+                
+                    if (_IsISO18RepView) $(".IsISO18Rep").show();
+                
+                    if (_IsISO17RadEdit) $(".IsISO17Rad").show();
+                
+                    if (_IsISO17RadView) $(".IsISO17Rad").show();
+                
+                    if (_IsISO17StnEdit) $(".IsISO17Stn").show();
+                
+                    if (_IsISO17StnView) $(".IsISO17Stn").show();
+                
+                    if (_IsISO16ChkEdit) $(".IsISO16Chk").show();
+                
+                    if (_IsISO16ChkView) $(".IsISO16Chk").show();
+                
+                    if (_IsISO16PlanEdit) $(".IsISO16Plan").show();
+                
+                    if (_IsISO16PlanView) $(".IsISO16Plan").show();
+                
+                    if (_IsISO16ShopEdit) $(".IsISO16Shop").show();
+                
+                    if (_IsISO16ShopView) $(".IsISO16Shop").show();
+                
+                    if (_IsISO15ChkEdit) $(".IsISO15Chk").show();
+                
+                    if (_IsISO15ChkView) $(".IsISO15Chk").show();
+                
+                    if (_IsISO15RecEdit) $(".IsISO15Rec").show();
+                
+                    if (_IsISO15RecView) $(".IsISO15Rec").show();
+                
+                    if (_IsISO14CaseEdit) $(".IsISO14Case").show();
+                
+                    if (_IsISO14CaseView) $(".IsISO14Case").show();
+                
+                    if (_IsISO14RaidEdit) $(".IsISO14Raid").show();
+                
+                    if (_IsISO14RaidView) $(".IsISO14Raid").show();
+                
+                    if (_IsISO13ChkEdit) $(".IsISO13Chk").show();
+                
+                    if (_IsISO13ChkView) $(".IsISO13Chk").show();
+                
+                    if (_IsISO12ChkEdit) $(".IsISO12Chk").show();
+                
+                    if (_IsISO12ChkView) $(".IsISO12Chk").show();
+                
+                    if (_IsISO11ChkEdit) $(".IsISO11Chk").show();
+                
+                    if (_IsISO11ChkView) $(".IsISO11Chk").show();
+                
+                    if (_IsISO10FreqEdit) $(".IsISO10Freq").show();
+                
+                    if (_IsISO10FreqView) $(".IsISO10Freq").show();
+                
+                    if (_IsISO26ChkEdit) $(".IsISO26Chk").show();
+                
+                    if (_IsISO26ChkView) $(".IsISO26Chk").show();
+                
+                    if (_IsISO09ChkEdit) $(".IsISO09Chk").show();
+                
+                    if (_IsISO09ChkView) $(".IsISO09Chk").show();
+                
+                    if (_IsISO09PlanEdit) $(".IsISO09Plan").show();
+                
+                    if (_IsISO09PlanView) $(".IsISO09Plan").show();
+                
+                    if (_IsISO05CompEdit) $(".IsISO05Comp").show();
+                
+                    if (_IsISO05CompView) $(".IsISO05Comp").show();
+                
+                    if (_IsISO05SvyEdit) $(".IsISO05Svy").show();
+                
+                    if (_IsISO05SvyView) $(".IsISO05Svy").show();
+                
+
+        $(".IsM003").show();
+    $(".IsM003 li").show();
+
+    checkM(".IsM001");
+
+    checkM(".IsM002a");
+    checkM(".IsM002f");
+    checkM(".IsM002b");
+    checkM(".IsM002c");
+    checkM(".IsM002d");
+    checkM(".IsM002e");
+
+    checkM(".IsM003a");
+    checkM(".IsM003b");
+    checkM(".IsM003c");
+    checkM(".IsM003d");
+    checkM(".IsM003e");
+
+    checkM(".IsM004a");
+    checkM(".IsM004b");
+    checkM(".IsM004c");
+
+    checkM(".IsM002");
+    checkM(".IsM003");
+    checkM(".IsM004");
+
+
+    checkM(".IsISO05");
+    checkM(".IsISO09");
+    //checkM(".IsISO10");
+
+    checkM(".IsISO14");
+    checkM(".IsISO15");
+    checkM(".IsISO16");
+    checkM(".IsISO17");
+    checkM(".IsISOPP");
+
+    $(".IsISRep").show();
+    $(".IsISMoph").show();
+
+    $(".notify,.joblist").show();
+               
+    });
+    function isVisible(element) {
+        if (element.css('visibility') !== 'hidden' && element.css('display') !== 'none') {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    function checkM(M) {
+        $(M).hide();
+        $(M + " li").each(function () {
+            if (isVisible($(this))) {
+                $(M).show();
+            }
+        });
+    }
+
+</script>
+
+<div class="iso-sidebar">
+    <button class="btn iso-btn--togglemenu"><i class="iso-icon--menu"></i></button>
+    <ul class="navbar-nav iso--navbar-userinfo d-flex d-lg-none">
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_userinfo" role="button" aria-expanded="false"
+                aria-controls="sidebar_userinfo">
+                <img src="../../_inc/asset/user.svg">
+                <p>นายภูวกฤต พลชิงชัย </p>
+            </a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_userinfo">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="javascript:openProfile()">Profile</a>
+                        <a class="nav-link" href="../../UR/Logout.aspx">Sign Out</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+    </ul>
+
+    <ul class="nav flex-column flex-nowrap capmenu" style='width: 100%'>
+
+        <li class="nav-item notify">
+            <a class="nav-link " href="../Main">Notification</a>
+        </li>
+        <li class="nav-item joblist">
+            <a class="nav-link " href="../Mobile/JobListSch.aspx">Mobile Job List</a>
+        </li>
+
+        <li class="nav-item IsM001">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m1" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_m1">งานเตรียมความพร้อมและประสานงาน</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m1">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsISO09Plan">
+                        <a class="nav-link" href="../09/FF09PlanSch.aspx">1.บันทึกแผนตรวจสอบนอกสถานที่</a>
+                    </li>
+                    <li class="nav-item IsISO26Chk">
+                        <a class="nav-link" href="../26/FF26ChkSch.aspx">2.การตรวจสอบความพร้อมของรถตรวจสอบฯ</a>
+                    </li>
+
+
+                </ul>
+            </div>
+        </li>
+
+        <li class="nav-item IsM002">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_m2">งานตรวจสอบคลื่นความถี่</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsM002f sub" rel="sidebar_collapse_m2">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2f" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2f">1.การดำเนินงานตามภารกิจพิเศษ</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2f">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO09Chk">
+                                    <a class="nav-link" href="../09b/FF09ChkMSch.aspx">การมอบหมายงานตรวจสอบเฉพาะกิจ</a>
+                                </li>
+                                <li class="nav-item IsISO09Chk">
+                                    <a class="nav-link" href="../09b/FF09ChkSSch.aspx">ผลการดำเนินการตรวจสอบเฉพาะกิจ</a>
+                                </li>
+                                <li class="nav-item IsISO09Chk">
+                                    <a class="nav-link" href="../09/FF09ChkMSch.aspx">การมอบหมายงานตรวจสอบ<br />
+                                        (ข้อมูลเดิม)</a>
+                                </li>
+                                <li class="nav-item IsISO09Chk">
+                                    <a class="nav-link" href="../09/FF09ChkSSch.aspx">ผลการดำเนินการตรวจสอบนอกแผน<br />
+                                        (ข้อมูลเดิม)</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item IsM002a sub" rel="sidebar_collapse_m2">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2a" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2a">2.การบันทึกการตรวจสอบครอบครอง</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2a">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO10Freq">
+                                    <a class="nav-link" href="../10/FF10FreqSch.aspx">การพิสูจน์ทราบหน่วยงานผู้ใช้ความถี่ (โดยสถานีตรวจสอบ)</a>
+                                </li>
+
+                                <li class="nav-item IsISO10Freq">
+                                    <a class="nav-link" href="../10/FF10FreqSchFq.aspx">การค้นหาการครอบครองความถี่ แยกความถี่</a>
+                                </li>
+
+                                <li class="nav-item IsISO10Freq">
+                                    <a class="nav-link" href="../10/FF10FqChkSch.aspx">การตรวจสอบการใช้งานความถี่และพิสูจน์ทราบหน่วยงานผู้ใช้ความถี่ (นอกที่ตั้ง) </a>
+                                </li>
+                                <li class="nav-item IsISO10Freq">
+                                    <a class="nav-link" href="../10/FF10FreqBSch.aspx">การตรวจสอบการครอบครองความความถี่เพื่อประกอบการจัดสรรและเรียกคืนคลื่นความถี่</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="nav-item  IsISO13Chk">
+                        <a class="nav-link" href="../13/FF13ChkSch.aspx">3.การตรวจสอบความถี่ที่ไม่ได้รับอนุญาต</a>
+                    </li>
+                    <li class="nav-item IsM002b sub" rel="sidebar_collapse_m2">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2b" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2b">4.การตรวจสอบมาตรฐานการแพร่</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2b">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO11Chk">
+                                    <a class="nav-link" href="../11/FF11Plan.aspx">แผนการตรวจสอบมาตรฐานการแพร่</a>
+                                </li>
+                                <li class="nav-item IsISO11Chk">
+                                    <a class="nav-link" href="../11/FF11ChkSch.aspx">การตรวจสอบมาตรฐานการแพร่</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="nav-item  IsISO11Chk">
+                        <a class="nav-link" href="../11b/FF11ChkSch.aspx">5.การตรวจสอบคลื่นความถี่ และการประกอบกิจการ</a>
+                    </li>
+                    <li class="nav-item IsM002c sub" rel="sidebar_collapse_m2">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2c" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2c">6.การตรวจสอบแก้ไขรบกวน</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2c">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO12Chk">
+                                    <a class="nav-link" href="../12/FF12ChkSch.aspx">การตรวจสอบแก้ไขการรบกวนคลื่นวิทยุ</a>
+                                </li>
+                                <li class="nav-item IsISO12Chk">
+                                    <a class="nav-link" href="../12/FF12BDSch.aspx">การตรวจสอบการรบกวนคลื่นความถี่บริเวณชายแดนไทย</a>
+                                </li>
+
+                                <li class="nav-item IsISO12Chk">
+                                    <a class="nav-link" href="../12/FF12AESch.aspx">การตรวจสอบสถานีวิทยุกระจายเสียงรบกวนกิจการการบิน และ สถานีวิทยุกระจายเสียงรบกวนกันเอง</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <!--
+
+                      
+                      -->
+                    <li class="nav-item IsM002e sub" rel="sidebar_collapse_m2">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2e" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2e">7.การวัดความแรงสนามแม่เหล็กไฟฟ้า EMF และ V2K</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2e">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO18Rep">
+                                    <a class="nav-link" href="../18/FF18Plan.aspx">แผนการวัดความแรงสนามแม่เหล็กไฟฟ้า EMF</a>
+                                </li>
+                                <li class="nav-item IsISO18Rep">
+                                    <a class="nav-link" href="../18/FF18RepSch.aspx">การวัดความแรงสนามแม่เหล็กไฟฟ้า EMF</a>
+                                </li>
+                                <li class="nav-item IsISO18Rep">
+                                    <a class="nav-link" href="../18v/FF18RepSch.aspx">การตรวจวัดความถี่ กรณี V2K</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li class="nav-item IsM004">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m4" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_m4">งานคุ้มครองผู้บริโภคและประโยชน์สาธารณะ</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m4">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsM004a sub" rel="sidebar_collapse_m4">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m4a" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m4a">1.การตรวจสอบเนื้อหารายการและโฆษณาของสถานีวิทยุกระจายเสียง</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m4a">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO28Chk">
+                                    <a class="nav-link" href="../28/FF28Plan.aspx">แผนการตรวจสอบเนื้อหารายการและโฆษณาของสถานีวิทยุกระจายเสียง</a>
+                                </li>
+                                <li class="nav-item IsISO28Chk">
+                                    <a class="nav-link" href="../28/FF28ChkSch.aspx">การตรวจสอบเนื้อหารายการและโฆษณาของสถานีวิทยุกระจายเสียง</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item IsM004b sub" rel="sidebar_collapse_m4">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m4b" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m4b">2.การตรวจสอบเนื้อหารายการและโฆษณาของโทรทัศน์แบบบอกรับสมาชิก      </a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m4b">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO29Chk">
+                                    <a class="nav-link" href="../29/FF29Plan.aspx">แผนการตรวจสอบเนื้อหารายการและโฆษณาของโทรทัศน์แบบบอกรับสมาชิก</a>
+                                </li>
+                                <li class="nav-item IsISO29Chk">
+                                    <a class="nav-link" href="../29/FF29ChkSch.aspx">การตรวจสอบเนื้อหารายการและโฆษณาของโทรทัศน์แบบบอกรับสมาชิก</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item IsM004c sub" rel="sidebar_collapse_m4">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m4c" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m4c">Dashboard</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m4c">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO28Chk">
+                                    <a class="nav-link" href="../28/FF28Rep1.aspx">รายงานการตรวจสอบเนื้อหารายการและโฆษณา</a>
+                                </li>
+                                <li class="nav-item IsISO28Chk">
+                                    <a class="nav-link" href="../28/FF28Rep2.aspx">สรุปข้อมูลการตรวจสอบเนื้อหารายการและโฆษณา</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+
+
+        <li class="nav-item IsM003">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m3" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_m3">งานบังคับใช้กฎหมายและนิติการ</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m3">
+                <ul class="nav flex-column">
+
+                    <li class="nav-item IsM003a sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m3a" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m3a">1.การตรวจสำรองจำหน่ายเครื่องวิทยุคมนาคมและอุปกรณ์</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m3a">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO16Plan">
+                                    <a class="nav-link" href="../16/FF16PlanM.aspx">แผนการตรวจผู้ประกอบกิจการค้าเครื่องและอุปกรณ์วิทยุคมนาคม</a>
+                                </li>
+                                <li class="nav-item IsISO16Chk">
+                                    <a class="nav-link" href="../16/FF16ChkSch.aspx">การตรวจสอบผู้ประกอบกิจการค้าเครื่องและอุปกรณ์วิทยุคมนาคม
+</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item IsISO17 sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_8" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_8">2.การตรวจเครื่องวิทยุคมนาคม สถานีวิทยุคมนาคมและใบอนุญาตวิทยุคมนาคม</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_8">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+
+                                <li class="nav-item IsISO17Rad">
+                                    <a class="nav-link" href="../17/FF17Plan.aspx">แผนการตรวจเครื่องวิทยุคมนาคม สถานีวิทยุคมนาคมและใบอนุญาตฯ</a>
+                                </li>
+
+                                <li class="nav-item IsISO17Rad">
+                                    <a class="nav-link" href="../17/FF17RadioSch.aspx">การตรวจเครื่องวิทยุคมนาคม สถานีวิทยุคมนาคมและใบอนุญาตฯ </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+
+
+                    <li class="nav-item IsISOLawCon sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link law" data-toggle="collapse" href="#sidebar_collapse_LawCon" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_LawCon">3.การจัดทำคำวินิจฉัยเรื่องร้องเรียนในกิจการโทรคมนาคม</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_LawCon">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISOLawConc"><a class="nav-link" href="../Law/LawConcSch.aspx">เรื่องร้องเรียน</a>
+                                </li>
+                                <!--li class="nav-item IsISOLawConf"><a class="nav-link" href="../Law/LawConfSch.aspx">เปรียบเทียบปรับ</a>
+                                       </li-->
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item IsISOLawNF">
+                        <a class="nav-link" href="../Law/LawNFSch.aspx">4.การแจ้งเตือนสถานีวิทยุทดลองประกอบกิจการ ที่ออกอากาศผิดเงื่อนไข</a>
+                    </li>
+
+                    <li class="nav-item IsISOLawCRM">
+                        <a class="nav-link" href="../Law/LawAppSch.aspx">5. การร้องทุกข์กล่าวโทษ</a>
+                    </li>
+
+                    <li class="nav-item IsISOLawRaid">
+                        <a class="nav-link" href="../Law/LawRaidSch.aspx">6.การตรวจค้นจับกุมผู้กระทำความผิด</a>
+                    </li>
+                    <li class="nav-item IsISO14 sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_4" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_4">7.การติดตามผลคดี</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_4">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <!--li class="nav-item  IsISO14Raid">
+                                    <a class="nav-link" href="../14/FF14RaidSch.aspx">บันทึกการดำเนินการตรวจค้นจับกุม</a>
+                                </!--li-->
+                                <li class="nav-item IsISO14Case">
+                                    <a class="nav-link" href="../14/FF14CaseSch.aspx">บันทึกการติดตามผลคดี</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="nav-item IsISOLawTTF">
+                        <a class="nav-link" href="../Law/LawTTFSch.aspx">8.การให้ปากคำต่อพนักงานสอบสวน/พนักงานอัยการ/คุมประพฤติ/ศาล</a>
+                    </li>
+
+                    <li class="nav-item IsM002d sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_m2d" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_m2d">9.การตรวจพิสูจน์และเก็บรักษาของกลาง</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_m2d">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <li class="nav-item IsISO15Rec">
+                                    <a class="nav-link" href="../15/FF15RecSch.aspx ">บันทึกการรับเครื่องวิทยุคมนาคมและอุปกรณ์ของกลางดำเนินคดี</a>
+                                </li>
+                                <li class="nav-item IsISO15Chk">
+                                    <a class="nav-link" href="../15/FF15ChkSch.aspx">บันทึกผลการตรวจสอบเครื่องวิทยุคมของกลางฯ</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+
+
+                    <li class="nav-item IsISOLawPRB sub" rel="sidebar_collapse_m3">
+                        <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_LawPRB" role="button" aria-expanded="false"
+                            aria-controls="sidebar_collapse_LawPRB">10.การเปรียบเทียบปรับคดี ตาม พ.ร.บ.วิทยุคมนาคม พ.ศ.2498</a>
+                        <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_LawPRB">
+                            <ul class="nav flex-column" style="margin-left: 20px;">
+                                <!--li class="nav-item IsISOLawPRBc"><a class="nav-link" href="../Law/LawPRBcSch.aspx">เรื่องร้องเรียน</a>
+                                       </!--li-->
+                                <li class="nav-item IsISOLawPRBf"><a class="nav-link" href="../Law/LawPRBfSch.aspx">เปรียบเทียบปรับ</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+
+
+
+
+
+
+
+
+                </ul>
+            </div>
+        </li>
+
+
+
+        <li class="nav-item IsISOPP">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_7" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_7">งานบริหารจัดการเครื่องมือและอุปกรณ์  </a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_7">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsISOPPEquip">
+                        <a class="nav-link" href="../PP/PPEquipSch.aspx">ฐานข้อมูลอุปกรณ์</a>
+                    </li>
+                    <li class="nav-item IsISOPPEquip d-none">
+                        <a class="nav-link" href="../PP/PPFixedSch.aspx">ส่วนการแจ้งซ่อม</a>
+                    </li>
+                    <li class="nav-item IsISOPPEquip d-none">
+                        <a class="nav-link" href="../PP/PPTestSch.aspx">ส่วนการสอบเทียบ</a>
+                    </li>
+
+                    <li class="nav-item IsISOPPEquip">
+                        <a class="nav-link" href="../PP/PPEquipStat.aspx">สถิติการใช้เครื่องมือและอุปกรณ์</a>
+                    </li>
+                    <!--<li class="nav-item">
+                <a class="nav-link" href="PP-Status.html">สถานะอุปกรณ์</a>
+              </li>-->
+                </ul>
+            </div>
+        </li>
+
+        <li class="nav-item IsISOPP">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_9" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_7">ข้อมูลผู้ประกอบการ/ร้านค้า/สถานี</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_9">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsISO16Shop">
+                        <a class="nav-link" href="../STN/ShopSch.aspx">ข้อมูลรายละเอียดร้านค้า</a>
+                    </li>
+                    <li class="nav-item IsISO16Shop">
+                        <a class="nav-link" href="../STN/STNSch.aspx">ข้อมูลรายละเอียดสถานี</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+        <li class="nav-item IsISO05">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_1" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_1">การสำรวจความพึงพอใจ</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_1">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsISO05Svy">
+                        <a class="nav-link " href="../05/FF05Sch.aspx">การสำรวจความพึงพอใจ</a>
+                    </li>
+                    <li class="nav-item IsISO05Comp">
+                        <a class="nav-link" href="../05/FF05CompSch.aspx">การรับเรื่องร้องเรียน</a>
+                    </li>
+                    <li class="nav-item IsISO05Comp">
+                        <a class="nav-link" href="../05/FF05CRMSch.aspx">การรับเรื่องร้องเรียน (ระบบCRM)</a>
+                    </li>
+                    <li class="nav-item IsISO05Comp">
+                        <a class="nav-link" href="../05/FF05CRMCateSch.aspx">CRM Categories</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+        <li class="IsISRep">&nbsp;</li>
+        <li class="nav-item IsISRep">
+            <a class="nav-link" href="../../Rep/Main" target="_blank"><u>ระบบรายงาน (Report System)</u></a>
+        </li>
+        <li class="nav-item IsISMoph">
+            <a class="nav-link" href="../S2T/TextMoph.aspx" target="_blank"><u>ฐานข้อมูล อย.</u></a>
+        </li>
+        <li class="IsISMoph">&nbsp;</li>
+
+        <!--
+        <li class="nav-item IsISOPP">
+            <a class="nav-link" data-toggle="collapse" href="#sidebar_collapse_10" role="button" aria-expanded="false"
+                aria-controls="sidebar_collapse_10">สรุปรายงาน</a>
+            <div class="collapse iso--sidebar--collapse" id="sidebar_collapse_10">
+                <ul class="nav flex-column">
+                    <li class="nav-item IsISOPPEquip">
+                        <a class="nav-link" href="../Report/RepSum.aspx">สรุปรายงานการปฏิบัติ</a>
+                    </li>
+                  <li class="nav-item IsISOPPEquip">
+                        <a class="nav-link" href="../Report/RepChk.aspx">รายงานผลการตรวจสอบ</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        -->
+
+    </ul>
+</div>
+
+
+<button class="btn btn-primary iso-btn--togglemenu togglemenu-outer"><i class="iso-icon--menu"></i></button>
+
+
+<script type="text/javascript">
+    $(function () {
+        var url = window.location.pathname.toLowerCase().replace('sch.', '.').replace('addm.', '.').replace('a.', '.').replace('add.', '.');
+        var substr = url.split('/');
+        var urlaspx = substr[substr.length - 2] + "/" + substr[substr.length - 1].split('_')[0];
+        var hd = "";
+
+        $('ul.nav.flex-column.flex-nowrap li').each(function (i, value) {
+            if (urlaspx == "")
+                return;
+            if (value.children.length > 1) {
+                var expanded = false;
+                $(this).find('li a').each(function () {
+                    if (this.href.toLowerCase().indexOf("#") == -1 && this.href.toLowerCase().replace('sch.', '.').replace('a.', '.').replace('addm.', '.').replace('add.', '.').indexOf(urlaspx) >= 0) {
+                        $(this).removeClass('active').addClass('active');
+                        $(this).closest('.collapse.iso--sidebar--collapse').removeClass('show').addClass('show')
+                        expanded = true;
+                        var obj = $(this).parent().parent().parent().parent();
+                        if (obj.hasClass("sub"))
+                            hd = obj.find(">a").text() + " : ";
+                        hd += $(this).text();
+                    }
+                })
+
+                $(this).children()[0].setAttribute('aria-expanded', expanded)
+
+                if (expanded && $(this).hasClass("sub")) {
+                    //    alert($(this).attr("rel"));
+                    $("#" + $(this).attr("rel")).removeClass('show').addClass('show');
+                }
+
+                //
+            }
+            else {
+                if (typeof ($(value.children)[0]) != "undefined" && $(value.children)[0].href.toLowerCase().replace('sch.', '.').replace('a.', '.').replace('addm.', '.').replace('add.', '.').indexOf(urlaspx) >= 0 && $(value.children)[0].href.toLowerCase().indexOf("#") == -1) {
+                    $(value.children).removeClass('active').addClass('active');
+                }
+            }
+        })
+
+        if ($('#collapse_search').length > 0) {
+            $('#collapse_search').removeClass('show')
+        }
+
+        if (window.location.search === '') {
+            if ($('#collapse_search').length > 0) {
+                $('#collapse_search').addClass('show')
+                $('div.table-responsive').hide();
+            }
+        }
+        if (hd)
+            $(".iso-heading h1").html(hd);
+        $(".iso-heading h1").show();
+
+    })
+</script>
+
+
+
+        <div class="iso-content">
+            <div class="iso-heading">
+                <h1>
+                    28 รายงานการตรวจสอบเนื้อหารายการและโฆษณาของวิทยุกระจายเสียง</h1>
+                <a href="FF28Chk.aspx?fno=add" class="btn btn-primary p-edit"><i class="iso-icon--plus"></i>เพิ่มข้อมูล</a>
+            </div>
+            <form method="post" action="./FF28ChkSch.aspx?RegID=5&amp;AreaID=8&amp;AreaID_raw=0&amp;SrcTypeID=2&amp;sProv1=0&amp;sAumphoe1=0&amp;sTambol1=0&amp;ChkResuID=0&amp;Process=&amp;Doc03=&amp;RemChkNa=&amp;StaNa=&amp;FreqMhz1=&amp;FreqMhz2=&amp;ZipCode=&amp;FDt=01%2f01%2f2569&amp;TDt=&amp;FDtC=&amp;TDtC=&amp;SiteCode=&amp;ProgNa=" id="FormSch">
+<div class="aspNetHidden">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKLTM2MDg0ODAzMQ8WAh4TVmFsaWRhdGVSZXF1ZXN0TW9kZQIBFgJmD2QWDgIBDxBkEBUCHuC4geC4o+C4uOC4k+C4suC5gOC4peC4t+C4reC4gQvguKDguLLguIQgMhUCATABNRQrAwJnZ2RkAgMPEGQQFQIe4LiB4Lij4Li44LiT4Liy4LmA4Lil4Li34Lit4LiBDOC5gOC4guC4lSAyMxUCATABOBQrAwJnZ2RkAgUPEGQQFQIe4LiB4Lij4Li44LiT4Liy4LmA4Lil4Li34Lit4LiBDOC5gOC4guC4lSAyMxUCATADNSw4FCsDAmdnZGQCBw8QZBAVCx7guIHguKPguLjguJPguLLguYDguKXguLfguK3guIEt4LmA4Lij4Li34LmI4Lit4LiH4Lij4LmJ4Lit4LiH4LmA4Lij4Li14Lii4LiZHuC4leC4o+C4p+C4iOC4leC4suC4oeC5geC4nOC4mSrguJXguLTguJTguJXguLLguKHguIHguLLguKPguYHguIHguYnguYTguIIk4LiV4Liy4Lih4LiB4Liy4Lij4Lij4LmJ4Lit4LiH4LiC4LitaeC4leC4o+C4p+C4iOC4quC4reC4muC4i+C5ieC4s+C4oOC4suC4ouC4q+C4peC4seC4h+C4oeC4teC4hOC4s+C4quC4seC5iOC4h+C5gOC4reC4suC5gOC4m+C4o+C4teC4ouC4muC4rzXguJXguKPguKfguIjguKrguK3guJrguJXguLLguKHguKHguJXguLQg4LiB4Liq4LiX4LiKLhvguJXguKPguKfguIjguKrguK3guJrguJ7guJpj4LiV4Lij4Lin4LiI4LiL4LmJ4Liz4LiV4Liy4Lih4LiE4Liz4Liq4Lix4LmI4LiH4Lij4Liw4LiH4Lix4Lia4LiB4Liy4Lij4Lit4Lit4LiB4Lit4Liy4LiB4Liy4Lio4LivQuC4leC4o+C4p+C4iOC4i+C5ieC4s+C4leC4suC4oeC4hOC4s+C4quC4seC5iOC4h+C4o+C4sOC4h+C4seC4muC4r2bguJXguKPguKfguIjguKrguK3guJrguYDguJ3guYnguLLguKPguLDguKfguLHguIfguKvguKXguLHguIfguKHguLXguITguLPguKrguLHguYjguIfguKPguLDguIfguLHguJrguK8VCwEwATEBMgEzATQBNQE2ATcBOAE5AjEwFCsDC2dnZ2dnZ2dnZ2dnZGQCFQ8QZGQUKwEAZAIXDxBkZBQrAQBkAicPEGQQFRIe4LiB4Lij4Li44LiT4Liy4LmA4Lil4Li34Lit4LiBUuC5gOC4meC4t+C5ieC4reC4q+C4suC5guC4huC4qeC4k+C4siDguYDguITguKPguLfguYjguK3guIfguKHguLfguK3guYHguJ7guJfguKLguYxJ4LmA4LiZ4Li34LmJ4Lit4Lir4Liy4LmC4LiG4Lip4LiT4LiyIOC5gOC4hOC4o+C4t+C5iOC4reC4h+C4quC4s+C4reC4suC4h1XguYDguJnguLfguYnguK3guKvguLLguYLguIbguKnguJPguLIg4Lic4Lil4Li04LiV4Lig4Lix4LiT4LiR4LmM4Liq4Lih4Li44LiZ4LmE4Lie4LijK+C5gOC4meC4t+C5ieC4reC4q+C4suC5guC4huC4qeC4k+C4siDguKLguLI94LmA4LiZ4Li34LmJ4Lit4Lir4Liy4LmC4LiG4Lip4LiT4LiyIOC4ouC4suC5gOC4quC4nuC4leC4tOC4lEnguYDguJnguLfguYnguK3guKvguLLguYLguIbguKnguJPguLIg4Lin4Lix4LiV4LiW4Li44Lit4Lix4LiZ4LiV4Lij4Liy4LiiNOC5gOC4meC4t+C5ieC4reC4q+C4suC5guC4huC4qeC4k+C4siDguK3guLLguKvguLLguKNg4LmA4LiZ4Li34LmJ4Lit4Lir4Liy4LmC4LiG4Lip4LiT4Liy4Lic4Lil4Li04LiV4Lig4Lix4LiT4LiR4LmM4LiX4Liy4LiH4LiB4Liy4Lij4LmA4LiB4Lip4LiV4LijZuC5gOC4meC4t+C5ieC4reC4q+C4suC4l+C4teC5iOC4geC4o+C4sOC4l+C4muC4leC5iOC4reC4hOC4p+C4suC4oeC4oeC4seC5iOC4meC4hOC4h+C4guC4reC4h+C4o+C4seC4kNwB4LmA4LiZ4Li34LmJ4Lit4Lir4Liy4LiX4Li14LmI4LmE4Lih4LmI4Liq4Lit4LiU4LiE4Lil4LmJ4Lit4LiH4LiV4Liy4Lih4Lir4Lil4Lix4LiB4LmA4LiB4LiT4LiR4LmM4LiB4Liy4Lij4LiB4Liz4LiB4Lix4Lia4LiU4Li54LmB4Lil4LivICjguIHguLLguKPguJvguKPguLDguIHguLLguKjguIrguLfguYjguK3guKrguJbguLLguJnguLUg4LiE4Lin4Liy4Lih4LiW4Li14LmI4LivKbwC4LmA4LiZ4Li34LmJ4Lit4Lir4Liy4LiX4Li14LmI4LmE4Lih4LmI4Liq4Lit4LiU4LiE4Lil4LmJ4Lit4LiH4LiV4Liy4Lih4Lir4Lil4Lix4LiB4LmA4LiB4LiT4LiR4LmM4LiB4Liy4Lij4LiB4Liz4LiB4Lix4Lia4LiU4Li54LmB4Lil4LivICjguIHguLLguKPguKvguLLguKPguLLguKLguYTguJTguYnguILguK3guIfguKrguJbguLLguJnguLXguKfguLTguJfguKLguLjguIHguKPguIjguLLguKLguYDguKrguLXguKLguIfguJvguKPguLDguYDguKDguJfguIHguLTguIjguIHguLLguKPguKrguLLguJjguLLguKPguJPguLAv4LiK4Li44Lih4LiK4LiZKXvguYDguJnguLfguYnguK3guKvguLLguKHguLXguIHguLLguKPguIHguKPguLDguJfguLPguIvguLbguYjguIfguYDguILguYnguLLguKXguLHguIHguKnguJPguLDguKXguLLguKHguIHguK3guJnguLLguIjguLLguKOEAeC5gOC4meC4t+C5ieC4reC4q+C4suC4oeC4teC4nOC4peC4geC4o+C4sOC4l+C4muC4leC5iOC4reC4iOC4tOC4leC5g+C4iOC4q+C4o+C4t+C4reC4quC4uOC4guC4oOC4suC4nuC4guC4reC4h+C4m+C4o+C4sOC4iuC4suC4iuC4mXvguYDguJnguLfguYnguK3guKvguLLguKXguYnguKHguKXguYnguLLguIfguIHguLLguKPguJvguIHguITguKPguK3guIfguYPguJnguKPguLDguJrguK3guJrguJvguKPguLDguIrguLLguJjguLTguJvguYTguJXguKIw4LmE4Lih4LmI4Lie4Lia4LiB4Liy4Lij4LiB4Lij4Liw4LiX4Liz4Lic4Li04LiUMOC5hOC4oeC5iOC4nuC4muC4geC4suC4o+C4reC4reC4geC4reC4suC4geC4suC4qFrguK3guLLguIjguIjguLDguYDguILguYnguLLguILguYjguLLguKLguIHguLLguKPguIHguKPguLDguJfguLPguJzguLTguJQgICzguK3guLfguYjguJnguYYVEgEwATkBOAIxNwE3AjEwAjExATECMTYBMwIxNAIxNQIxMgIxMwEyATQBNgE1FCsDEmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2RkZE1V82hcucNgXeA03Mr2/px2zU2wP/MQYMJizlK43GHw" />
+</div>
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="2519978C" />
+</div>
+            <div class="iso-panel mb-4">
+                <div class="collapse show" id="collapse_search">
+                    <div class="row">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    สำนักงาน กสทช.</label>
+                                <select name="RegID" id="RegID" title="ภาค">
+	<option value="0">กรุณาเลือก</option>
+	<option selected="selected" value="5">ภาค 2</option>
+</select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group justify-content-end">
+                                <select name="AreaID" id="AreaID" title="เขต">
+	<option value="0">กรุณาเลือก</option>
+	<option selected="selected" value="8">เขต 23</option>
+</select>
+                                <div style='display:none'> <select name="AreaID_raw" id="AreaID_raw">
+	<option value="0">กรุณาเลือก</option>
+	<option value="5,8">เขต 23</option>
+</select></div>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    แหล่งที่มาในการตรวจสอบ</label>
+                                <select name="SrcTypeID" id="SrcTypeID" title="เลือก">
+	<option value="0">กรุณาเลือก</option>
+	<option value="1">เรื่องร้องเรียน</option>
+	<option selected="selected" value="2">ตรวจตามแผน</option>
+	<option value="3">ติดตามการแก้ไข</option>
+	<option value="4">ตามการร้องขอ</option>
+	<option value="5">ตรวจสอบซ้ำภายหลังมีคำสั่งเอาเปรียบฯ</option>
+	<option value="6">ตรวจสอบตามมติ กสทช.</option>
+	<option value="7">ตรวจสอบพบ</option>
+	<option value="8">ตรวจซ้ำตามคำสั่งระงับการออกอากาศฯ</option>
+	<option value="9">ตรวจซ้ำตามคำสั่งระงับฯ</option>
+	<option value="10">ตรวจสอบเฝ้าระวังหลังมีคำสั่งระงับฯ</option>
+</select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    เลขที่หนังสือ</label>
+                                <input name="Doc03" type="text" id="Doc03" class="form-control" />
+                            </div>
+                        </div>
+                        </div>
+                    <div class="row">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ชื่อผู้ได้รับอนุญาต</label>
+                                <input name="RemChkNa" type="text" id="RemChkNa" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ชื่อสถานี</label>
+                                <input name="StaNa" type="text" id="StaNa" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ช่วงความถี่ ตั้งแต่</label>
+                                <input name="FreqMhz1" type="text" id="FreqMhz1" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ถึง</label>
+                                <input name="FreqMhz2" type="text" id="FreqMhz2" class="form-control" />
+                            </div>
+                        </div>
+                           </div>
+                    <div class="row">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                   จังหวัด</label>
+                                <select name="sProv1" id="sProv1">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    อำเภอ</label>
+                                <select name="sAumphoe1" id="sAumphoe1" disabled="disabled">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ตำบล</label>
+                                <select name="sTambol1" id="sTambol1" disabled="disabled">
+	<option value="0">เลือก</option>
+</select>
+                            </div>
+                        </div>
+                         <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    รหัสไปรษณีย์</label>
+                                <input name="ZipCode" type="text" id="ZipCode" class="form-control" />
+                            </div>
+                        </div>
+                         
+                       
+                    </div>
+
+                    <div class="row">
+                    <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ช่วงวันที่วันที่รายงาน</label>
+                                <div class="form-datepicker">
+                                    <input name="FDt" type="text" id="FDt" class="form-control datepicker" value="01/01/2569" />
+                                </div>
+                            </div>
+                        </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ถึงวันที่</label>
+                                <div class="form-datepicker">
+                                    <input name="TDt" type="text" id="TDt" class="form-control datepicker" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ช่วงวันที่ตรวจสอบ</label>
+                                <div class="form-datepicker">
+                                    <input name="FDtC" type="text" id="FDtC" class="form-control datepicker" />
+                                </div>
+                            </div>
+                        </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ถึงวันที่</label>
+                                <div class="form-datepicker">
+                                    <input name="TDtC" type="text" id="TDtC" class="form-control datepicker" />
+                                </div>
+                            </div>
+                        </div>
+                </div>
+
+                    <div class="row">
+                          <div class="col-3">
+                    <div class="form-group">
+                        <label>รหัสสถานี</label>
+                        <input name="SiteCode" type="text" id="SiteCode" class="form-control" />
+				    </div>
+                </div>
+
+                        <div class="col-12 col-md-6 col-lg-5">
+                            <div class="form-group">
+                                <label>
+                                   ชื่อรายการ</label>
+                                <input name="ProgNa" type="text" id="ProgNa" class="form-control" />
+                            </div>
+                        </div>
+
+                    
+                    <div class="col-12 col-md-6 col-lg-4">
+                            <div class="form-group">
+                                <label>
+                                    ผลการตรวจสอบ</label>
+                                <select name="ChkResuID" id="ChkResuID" title="เลือก">
+	<option selected="selected" value="0">กรุณาเลือก</option>
+	<option value="9">เนื้อหาโฆษณา เครื่องมือแพทย์</option>
+	<option value="8">เนื้อหาโฆษณา เครื่องสำอาง</option>
+	<option value="17">เนื้อหาโฆษณา ผลิตภัณฑ์สมุนไพร</option>
+	<option value="7">เนื้อหาโฆษณา ยา</option>
+	<option value="10">เนื้อหาโฆษณา ยาเสพติด</option>
+	<option value="11">เนื้อหาโฆษณา วัตถุอันตราย</option>
+	<option value="1">เนื้อหาโฆษณา อาหาร</option>
+	<option value="16">เนื้อหาโฆษณาผลิตภัณฑ์ทางการเกษตร</option>
+	<option value="3">เนื้อหาที่กระทบต่อความมั่นคงของรัฐ</option>
+	<option value="14">เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ (การประกาศชื่อสถานี ความถี่ฯ)</option>
+	<option value="15">เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ (การหารายได้ของสถานีวิทยุกรจายเสียงประเภทกิจการสาธารณะ/ชุมชน)</option>
+	<option value="12">เนื้อหามีการกระทำซึ่งเข้าลักษณะลามกอนาจาร</option>
+	<option value="13">เนื้อหามีผลกระทบต่อจิตใจหรือสุขภาพของประชาชน</option>
+	<option value="2">เนื้อหาล้มล้างการปกครองในระบอบประชาธิปไตย</option>
+	<option value="4">ไม่พบการกระทำผิด</option>
+	<option value="6">ไม่พบการออกอากาศ</option>
+	<option value="5">อาจจะเข้าข่ายการกระทำผิด  ,อื่นๆ</option>
+</select>
+                            </div>
+                        </div>
+
+                         <div class="col-12 col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label>
+                                    ขั้นตอนการดำเนินการ</label>
+                                <select name="Process" id="Process">
+	<option selected="selected" value="">กรุณาเลือก</option>
+	<option value="1">ส่ง สสจ.</option>
+	<option value="2">สสจ.ตอบกลับ</option>
+	<option value="3">ส่ง บส., ปส.</option>
+</select>
+                            </div>
+                        </div>
+
+
+                        </div>
+               </div>
+                
+                <div class="row">
+                    <div class="col">
+                        <button onclick="schData()" type="button" class="btn btn-primary iso-btn--search mx-auto" data-toggle="collapse"
+                            data-target="#collapse_search" aria-expanded="false" aria-controls="collapseForm">
+                            <i class="iso-icon--search"></i>ค้นหา</button>
+                        <button type="button" class="btn btn-primary iso-btn--edit mx-auto" data-toggle="collapse"
+                            data-target="#collapse_search" aria-expanded="false" aria-controls="collapseForm">
+                            <i class="iso-icon--chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </form>
+            <div class="table-responsive mb-4">
+         <p class="total-result">ผลการค้นหา  211 รายการ</p>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px">
+                                ลำดับ
+                            </th>
+                            <th class='sortlink' rowspan="2"><a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&sort=DtTest'>
+                                วันที่ตรวจสอบ</a>
+                            </th>
+                           <th>สำนักงาน<br />กสทช.ภาค</th>
+                           <th class='sortlink' rowspan="2"><a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&sort=Area'>เขต</a></th>
+                          <th>ชื่อผู้ได้รับใบอนุญาต</th>
+                            <th>รหัสสถานี</th>
+                          <th>ชื่อสถานี</th>
+                             <th>
+                                จังหวัด
+                            </th>
+                             <th>
+                                อำเภอ
+                            </th>
+                             <th>
+                                ตำบล
+                            </th>
+                          <th>ที่ตั้ง</th>
+                          <th>ความถี่</th>
+                          <th>รายการ</th>
+                          <th>ผลการตรวจสอบ</th>
+                             <th>
+                                เครื่องมือวัด
+                            </th>
+                            <th>ขั้นตอนการ<br />ดำเนินการ</th>
+                             
+                            <th style="width: 60px">
+                                สถานะ
+                            </th>
+                            <th style="width: 60px">
+                                ข้อมูล
+                            </th>
+                            <th style="width: 41px;display:none;">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input">
+                                    <div class="box">
+                                        <i class="iso-icon--check"></i>
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                                <tr>
+                                <td> 1</td>
+                                    <td>20/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>บริษัท อสมท จำกัด (มหาชน)</td>
+                                     <td>RFYN650027</td>
+                                <td>สถานีวิทยุ บมจ.อสมท จังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.บ้านโพธิ์</td>
+                                     <td>166 หมู่ 8 ถนนมิตรภาพ-ขอนแก่น  ต.บ้านโพธิ์ อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>95.75</td>
+                                <td>ธนาพรดีไลน์</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37834" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 2</td>
+                                    <td>20/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>สำนักงานตำรวจแห่งชาติ</td>
+                                     <td>RFY217640022</td>
+                                <td>สถานีวิทยุกระจายเสียงราชดำริสัมพันธ์ นครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.หัวทะเล</td>
+                                     <td>หมู่ 4 บ้านหนองสองห้อง ถนนหนองสองห้อง-หนองตาคง ต.หัวทะเล อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>89.25</td>
+                                <td>สุขภาพดีวิถีไทย สมุนไพรปัญจศรี / สุพัฒตรา ประครองวงค์</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37835" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 3</td>
+                                    <td>20/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กองทัพบก</td>
+                                     <td>RFY210640085</td>
+                                <td>สถานีวิทยุกระจายเสียงกองทัพภาคที่ 2</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.หนองไผ่ล้อม</td>
+                                     <td>สถานีวิทยุกระจายเสียง สถานีวิทยุกองทัพบกภาคที่ 2 เอฟ.เอ็ม. 107.25 MHz. นครราชสีมา ค่ายสุรนารี ถนนราชดำเนิน ต.หนองไผ่ล้อม อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>107.25</td>
+                                <td>ศิลาวาไรน์ตี้ / ลูกคอฮอตลูกทุ่งฮิต /น้องเบล น้องแพร</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37836" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 4</td>
+                                    <td>20/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมประชาสัมพันธ์ </td>
+                                     <td>RFY303640042</td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทยจังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.โคกกรวด</td>
+                                     <td>41 หมู่ที่ 10 ถนนมิตรภาพ ต.โคกกรวด อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>105.25</td>
+                                <td>ไม่ประกาศชื่อรายการ </td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37837" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 5</td>
+                                    <td>27/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td> กรมประชาสัมพันธ์</td>
+                                     <td></td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทยจังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.โคกกรวด</td>
+                                     <td>41 หมู่ 10 ต.โคกกรวด อ.เมืองนครราชสีมา จ.นครราชสีมา ต.โคกกรวด อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>105.25</td>
+                                <td>ลูกทุ่งเน็ตเวิร์ก นางฟ้าปุ๊กกี้</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37891" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 6</td>
+                                    <td>30/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>สำนักงานตำรวจแห่งชาติ</td>
+                                     <td></td>
+                                <td>AM สวส.สวพ.2 นครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.จอหอ</td>
+                                     <td>สถานีวิทยุ สวพ. AM 990 KHz ถ.สุรนารายณ์ ต.จอหอ อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>990</td>
+                                <td>ลูกทุ่งสบายใจสายฝน / ลุงเชย</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37941" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 7</td>
+                                    <td>30/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมอุตุนิยมวิทยา</td>
+                                     <td>RFY206640002</td>
+                                <td>สถานีวิทยุกระจายเสียงกรมอุตุนิยมวิทยาจังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>916 ถนนเดชอุดม  ต.ในเมือง อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>94.25</td>
+                                <td>-</td>
+                                <td>ไม่พบการออกอากาศ</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37942" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 8</td>
+                                    <td>30/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>สำนักงานเลขาธิการสภาผู้แทนราษฏร์</td>
+                                     <td>RFY318640008</td>
+                                <td>สถานีวิทยุกระจายเสียงรัฐสภาจังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.โคกกรวด</td>
+                                     <td>ถนนมิตรภาพ ต.โคกกรวด อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>87.500</td>
+                                <td>เกาะติดวุฒิสภา / กนกรัตน์ / ทิพย์ลาภา</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37943" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 9</td>
+                                    <td>30/01/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมประชาสัมพันธ์</td>
+                                     <td></td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทยจังหวัดนครราชสีมา (สวท.นครราชสีมา)</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.โคกกรวด</td>
+                                     <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทย จังหวัดนครราชสีมา เลขที่ 41 หมู่ที่ 10 ถนนมิตรภาพ ต.โคกกรวด อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>729</td>
+                                <td>ทั่วทิศถิ่นไทย / ไทยแลนด์สตอรี่ / กบ สุกัญญา</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=37944" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 10</td>
+                                    <td>04/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กองบัญชาการกองทัพบก</td>
+                                     <td>RFY210640086</td>
+                                <td>สถานีวิทยุกระจายเสียง สถานีวิทยุกองทัพบกภาคที่ 2 จ.บุรีรัมย์</td>
+                                    <td>จ.บุรีรัมย์</td>
+                                    <td>อ.เมืองบุรีรัมย์</td>
+                                    <td>ต.เสม็ด</td>
+                                     <td>234 หมู่ที่ 13 อาคาร จทบ.บ.ร. หมู่บ้าน ค่ายสมเด็จเจ้าพระยามหากษัตริย์ศึก ต.เสม็ด อ.เมืองบุรีรัมย์ จ.บุรีรัมย์</td>
+                                <td>100.75</td>
+                                <td>ลูกคอฮอตลูกทุ่งฮิต น้องเอ๋</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38003" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 11</td>
+                                    <td>04/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>บริษัท อสมท จำกัด (มหาชน)</td>
+                                     <td>RFYN650028</td>
+                                <td>สถานีวิทยุ บมจ.อสมท จังหวัดบุรีรัมย์</td>
+                                    <td>จ.บุรีรัมย์</td>
+                                    <td>อ.ห้วยราช</td>
+                                    <td>ต.ห้วยราช</td>
+                                     <td>199 หมู่บ้าน4 ถนน ถนนบุรีรัมย์-ห้วยราช ต.ห้วยราช อ.ห้วยราช จ.บุรีรัมย์</td>
+                                <td>92.00</td>
+                                <td>รู้เท่าทันมิจฉาชีพ เป้ ปริญญา</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38004" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 12</td>
+                                    <td>04/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมประชาสัมพันธ์</td>
+                                     <td>RFY303640049</td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทย จังหวัดบุรีรัมย์ เอฟ.เอ็ม. 101.75 MHz</td>
+                                    <td>จ.บุรีรัมย์</td>
+                                    <td>อ.เมืองบุรีรัมย์</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>ถนนจิระ ต.ในเมือง อ.เมืองบุรีรัมย์ จ.บุรีรัมย์</td>
+                                <td>101.75</td>
+                                <td>จัดหางานสัมพันธ์ ธนชัย รอบรู้แรงงาน กาญจณา</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38005" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 13</td>
+                                    <td>04/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมประชาสัมพันธ์</td>
+                                     <td></td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทย จังหวัดบุรีรัมย์ เอ.เอ็ม. 1368 KHz</td>
+                                    <td>จ.บุรีรัมย์</td>
+                                    <td>อ.เมืองบุรีรัมย์</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>ถนนจิระ ต.ในเมือง อ.เมืองบุรีรัมย์ จ.บุรีรัมย์</td>
+                                <td>1368</td>
+                                <td>-</td>
+                                <td>ไม่พบการออกอากาศ</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38008" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 14</td>
+                                    <td>05/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>สำนักงานตำรวจแห่งชาติ</td>
+                                     <td>RFY217640017</td>
+                                <td>สถานีวิทยุกระจายเสียงตำรวจตระเวนชายแดน ค่ายสุรินทรภักดี จังหวัดชัยภูมิ</td>
+                                    <td>จ.ชัยภูมิ</td>
+                                    <td>อ.เมืองชัยภูมิ</td>
+                                    <td>ต.โพนทอง</td>
+                                     <td>ค่ายสุรินทรภักดี 351 ม.4 หมู่บ้านหนองหญ้ารังกา ถ.นิเวศน์รัตน์ ต.โพนทอง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                <td>88.75</td>
+                                <td>ไม่ประกาศชื่อรายการ บอสมีคุณ</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38009" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 15</td>
+                                    <td>05/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมประชาสัมพันธ์</td>
+                                     <td>RFY303640036</td>
+                                <td>สถานีวิทยุกระจายเสียงแห่งประเทศไทยจังหวัดชัยภูมิ</td>
+                                    <td>จ.ชัยภูมิ</td>
+                                    <td>อ.เมืองชัยภูมิ</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>ถนนองค์การบริหารส่วนจังหวัดสาย 2 ต.ในเมือง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                <td>92.75</td>
+                                <td>รอบรั้วบ้านเรา พิชิต สานนท์</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38010" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 16</td>
+                                    <td>05/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>บริษัท เจ.เอส.ไนน์ตี้วัน จำกัด</td>
+                                     <td>RFXL650009</td>
+                                <td>KCSRADIO ชัยภูมิ</td>
+                                    <td>จ.ชัยภูมิ</td>
+                                    <td>อ.เมืองชัยภูมิ</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>เลขที่ 271/11 ถ.องค์การบริหารส่วนจังหวัด สาย 2 ต.ในเมือง อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                <td>102.00</td>
+                                <td>มีตะวัน อุอารมณ์ดี</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38011" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 17</td>
+                                    <td>13/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กรมทหารสื่อสาร กองทัพบก</td>
+                                     <td></td>
+                                <td>สถานีวิทยุประจำถิ่นที่ 3 จังหวัดนครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>ค่ายสุรนารี ถนนราชดำเนิน ต.ในเมือง อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>1008</td>
+                                <td>ไม่ประกาศชื่อรายการ  สุทา</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38119" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 18</td>
+                                    <td>13/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กองทัพบก</td>
+                                     <td></td>
+                                <td>สวส ทภ.2 ค่ายสุรนารี นครราชสีมา</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.ในเมือง</td>
+                                     <td>ค่ายสุรนารี ถ.ราชดำเนิน  ต.ในเมือง อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>1134</td>
+                                <td>-</td>
+                                <td>ไม่พบการออกอากาศ</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38120" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 19</td>
+                                    <td>13/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กองทัพอากาศ</td>
+                                     <td></td>
+                                <td>สถานีวิทยุกระจายเสียง ทหารอากาศ 03 นครราชสีมา (AM)</td>
+                                    <td>จ.นครราชสีมา</td>
+                                    <td>อ.เมืองนครราชสีมา</td>
+                                    <td>ต.หนองไผ่ล้อม</td>
+                                     <td>สถานีวิทยุกระจายเสียง ทหารอากาศ 03 นครราชสีมา กองบิน 1 ต.หนองไผ่ล้อม อ.เมืองนครราชสีมา จ.นครราชสีมา</td>
+                                <td>1431</td>
+                                <td>-</td>
+                                <td>ไม่พบการออกอากาศ</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38122" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                                <tr>
+                                <td> 20</td>
+                                    <td>18/02/2569</td>
+                                <td>ภาค 2</td><td>เขต 23</td>
+                               <td>กองทัพบก</td>
+                                     <td></td>
+                                <td>สวส จส.5 ชัยภูมิ</td>
+                                    <td>จ.ชัยภูมิ</td>
+                                    <td>อ.เมืองชัยภูมิ</td>
+                                    <td>ต.บ้านเล่า</td>
+                                     <td>เลขที่ 5 ถนนชัยภูมิ-ภูเขียว ต.บ้านเล่า อ.เมืองชัยภูมิ จ.ชัยภูมิ</td>
+                                <td>567</td>
+                                <td>พลังงานแห่งความสุข ดีเจอุ๋ย</td>
+                                <td>ไม่พบการกระทำผิด</td>
+                                      <td>P-R&S-ESME, IC RECORDER, Video Record</td>
+                                    <td></td>
+                                     <td>อนุมัติแล้ว</td>
+                               
+                                <td>
+                                    <a href="FF28Chk.aspx?ChkID=38142" class="btn iso-btn--icon mx-auto">
+                                        <i class="iso-icon--eye"></i>
+                                    </a>
+                                </td>
+                                <td class="align-middle" style="display:none;">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input">
+                                        <div class="box">
+                                            <i class="iso-icon--check"></i>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+<style>
+.sortup {background :url(../../img/sort_up.png) top center no-repeat #294D63;background-position-y:10px}
+.sortdown {background :url(../../img/sort_down.png) top center no-repeat #294D63;background-position-y:10px}
+.sortlink a {text-decoration:underline;color:#000000!important}
+</style>
+
+
+<div class="nbtc-pagination no-print-page" style='padding:20px'><a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=1' class="is-active">1</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=2' >2</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=3' >3</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=4' >4</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=5' >5</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=6' >6</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=7' >7</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=8' >8</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=9' >9</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=10' >10</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=11' >11</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=2'>&gt;</a> <a href='/Oper/ISO/28/FF28ChkSch.aspx?RegID=5&AreaID=8&AreaID_raw=0&SrcTypeID=2&sProv1=0&sAumphoe1=0&sTambol1=0&ChkResuID=0&Process=&Doc03=&RemChkNa=&StaNa=&FreqMhz1=&FreqMhz2=&ZipCode=&FDt=01%2f01%2f2569&TDt=&FDtC=&TDtC=&SiteCode=&ProgNa=&page=11'>&gt;&gt;</a> </div><br />
+            <div class="row justify-content-end mt-auto iso-group--btn">
+                 <button class="btn btn-secondary" onclick="viewRepStat()">
+                    <i class="iso-icon--report"></i>รายงานเชิงสถิติ</button>
+                 <button class="btn btn-secondary" onclick="viewRepStatXls()">
+                    <i class="iso-icon--excel"></i>รายงานเชิงสถิติ</button>
+                <button class="btn iso-btn--excel">
+                    <i class="iso-icon--excel"></i>Export to Excel</button>
+                <button class="btn btn-secondary" style="display:none;">
+                    <i class="iso-icon--printer"></i>พิมพ์</button>
+            </div>
+            
+        </div>
+    </div>
+    <footer class="iso-footer">Copyright @ 2018 nbtc.go.th. All Rights Reserved</footer>
+<style>
+    .modal-body {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+</style>
+<div class="modal fade" id="modalDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-lg" role="document" style="z-index:3000">
+    <div class="modal-content">
+        <iframe src="" style="height:calc(100vh - 100px)"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>window.__CF$cv$params={r:'a4c077d26aae8960',t:'MTc5MjI1MjMyMQ==',u:'01a14a9021157639b92902dff12670a5',ut:'RcBf5Ri0KUhVMr8P8gv4ndE_Z1xB1FuXjniSlTkIfeU-1792252322-1.2.1.1-UlotTyG3tw4HX17IajScZXkInB8izw9V3tIpF.6sRuwdmjCpgUoUdxHG7VCvjFKIeXmS_6Fc7UMTOQt2OlJ5bUUl1Y_7hzY5VIEUJzWUfao',i:60};(function(){if(!document.body)return;var s=document.createElement('script');s.src='/cdn-cgi/challenge-platform/scripts/precursor/main.js';document.head.appendChild(s);})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"310afaa68ccd4637b4c869278f9c1350","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

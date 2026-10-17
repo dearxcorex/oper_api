@@ -15,6 +15,7 @@ than fan them out.
 | `GET /health` | none | — never touches the portal; answers `ok`, `as_of` (the saved register's build time, or null) and `refreshing` |
 | `POST /find-stations` | bearer | `province`, `district`, `subdistrict`, `frequency`, `name`, `source`, `limit`, `details` |
 | `POST /count-stations` | bearer | `inspected_from`, `inspected_to` (ISO dates), `province`, `district`, `result`, `limit` |
+| `POST /content-inspections` | bearer | `inspected_from`, `inspected_to`, `frequency`, `freq_from`, `freq_to`, `station_name`, `programme`, `province`, `district`, `result`, `source_type`, `limit`; all optional |
 | `POST /refresh` | bearer | — starts a register rebuild in the background: 202, or 409 `busy` if one is already running |
 
 Bearer means `Authorization: Bearer $OPER_API_TOKEN`. Unknown body fields are
@@ -68,6 +69,26 @@ and warning document, and `inspections`, how many times it was inspected in
 the range. `truncated` says some stations were left out. Every page is walked,
 so a long date range can take longer than the 30 s client timeout; narrow the
 dates when it does.
+
+## `/content-inspections`
+
+งานคุ้มครอง: the content and advertising inspections of radio stations
+(`FF28ChkSch.aspx`). This is different work from `/count-stations`, which is
+งานตรวจสอบ, and the two must never answer for each other.
+
+`inspected_from` defaults to 1 January this year. `frequency` is an exact
+match in MHz; `freq_from`/`freq_to` give a range. `result` is one of
+`CONTENT_RESULTS`; the last, `พบการกระทำผิด`, means any wrongdoing (every result
+but ไม่พบการกระทำผิด and ไม่พบการออกอากาศ) and is filtered by the server, since the
+portal has no code for it. `source_type` defaults to every kind.
+
+`station_list` groups the inspections by station, at most `limit` (default 25,
+max 100). `flagged` stations (any wrongdoing) come first, then the most
+recently inspected. Each station's `checks` pair every inspection date with
+its `result`, `programme`, `process` (the follow-up step, e.g. ส่ง สสจ.) and
+`status`, newest first. `inspections` and `stations` count every match;
+`truncated` says some stations were left out. Every page is walked, so a
+broad search over a long range can be slow.
 
 ## Errors
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from nbtc_oper import NbtcOper, places, register
-from server.app import CountStations, FindStations, create_app
+from server.app import ContentInspections, CountStations, FindStations, create_app
 
 CLIENT = (Path(__file__).parent.parent / "skills/oper-api/operClient.ts").read_text(encoding="utf-8")
 GAZETTEER = places.parse_dpv((Path(__file__).parent / "fixtures/dpv_sample.js").read_text(encoding="utf-8"))
@@ -60,3 +60,22 @@ def test_count_and_health_responses_match():
     assert interface("ResultCount") == set(next(iter(counted["by_result"].values())))
     health = TestClient(create_app(make_api=lambda: None)).get("/health").json()
     assert interface("HealthResponse") == set(health)
+
+
+def test_content_inspections_match():
+    assert interface("ContentInspectionsRequest") == set(ContentInspections.model_fields)
+    assert const_list("CONTENT_RESULTS") == literal(ContentInspections, "result")
+    assert const_list("CONTENT_SOURCE_TYPES") == literal(ContentInspections, "source_type")
+
+    class Portal:
+        def content_search(self, **_):
+            rows = [{"chk_id": 1, "station_code": "S1", "inspected_date": "2026-03-10",
+                     "result": "ไม่พบการกระทำผิด"}]
+            return {"rows": rows, "total": 1, "complete": True}
+
+    found = NbtcOper.content_inspections(Portal(), inspected_from="2026-01-01")
+    assert interface("ContentInspectionsResponse") == set(found)
+    station = found["station_list"][0]
+    assert interface("ContentStation") == set(station)
+    assert interface("ContentCheck") == set(station["checks"][0])
+    assert "/content-inspections" in CLIENT

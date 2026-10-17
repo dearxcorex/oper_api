@@ -14,6 +14,47 @@ export type OperSource = (typeof OPER_SOURCES)[number];
 export const OPER_RESULTS = ['ตรงตามมาตรฐาน', 'ไม่ตรงตามมาตรฐาน'] as const;
 export type OperResult = (typeof OPER_RESULTS)[number];
 
+/**
+ * งานคุ้มครอง ผลการตรวจสอบ labels, and last 'พบการกระทำผิด': any wrongdoing,
+ * i.e. every result but ไม่พบการกระทำผิด and ไม่พบการออกอากาศ.
+ */
+export const CONTENT_RESULTS = [
+  'เนื้อหาโฆษณา อาหาร',
+  'เนื้อหาล้มล้างการปกครองในระบอบประชาธิปไตย',
+  'เนื้อหาที่กระทบต่อความมั่นคงของรัฐ',
+  'ไม่พบการกระทำผิด',
+  'อาจจะเข้าข่ายการกระทำผิด ,อื่นๆ',
+  'ไม่พบการออกอากาศ',
+  'เนื้อหาโฆษณา ยา',
+  'เนื้อหาโฆษณา เครื่องสำอาง',
+  'เนื้อหาโฆษณา เครื่องมือแพทย์',
+  'เนื้อหาโฆษณา ยาเสพติด',
+  'เนื้อหาโฆษณา วัตถุอันตราย',
+  'เนื้อหามีการกระทำซึ่งเข้าลักษณะลามกอนาจาร',
+  'เนื้อหามีผลกระทบต่อจิตใจหรือสุขภาพของประชาชน',
+  'เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ (การประกาศชื่อสถานี ความถี่ฯ)',
+  'เนื้อหาที่ไม่สอดคล้องตามหลักเกณฑ์การกำกับดูแลฯ (การหารายได้ของสถานีวิทยุกรจายเสียงประเภทกิจการสาธารณะ/ชุมชน)',
+  'เนื้อหาโฆษณาผลิตภัณฑ์ทางการเกษตร',
+  'เนื้อหาโฆษณา ผลิตภัณฑ์สมุนไพร',
+  'พบการกระทำผิด',
+] as const;
+export type ContentResult = (typeof CONTENT_RESULTS)[number];
+
+/** Why a งานคุ้มครอง inspection was made. */
+export const CONTENT_SOURCE_TYPES = [
+  'เรื่องร้องเรียน',
+  'ตรวจตามแผน',
+  'ติดตามการแก้ไข',
+  'ตามการร้องขอ',
+  'ตรวจสอบซ้ำภายหลังมีคำสั่งเอาเปรียบฯ',
+  'ตรวจสอบตามมติ กสทช.',
+  'ตรวจสอบพบ',
+  'ตรวจซ้ำตามคำสั่งระงับการออกอากาศฯ',
+  'ตรวจซ้ำตามคำสั่งระงับฯ',
+  'ตรวจสอบเฝ้าระวังหลังมีคำสั่งระงับฯ',
+] as const;
+export type ContentSourceType = (typeof CONTENT_SOURCE_TYPES)[number];
+
 /** At least one of province, district, frequency or name. */
 export interface FindStationsRequest {
   province?: string;
@@ -32,6 +73,24 @@ export interface CountStationsRequest {
   province?: string;
   district?: string;
   result?: OperResult;
+  limit?: number;
+}
+
+/** งานคุ้มครอง (content and adverts), not งานตรวจสอบ. Every field is optional. */
+export interface ContentInspectionsRequest {
+  /** ISO date; omitted means 1 January this year. */
+  inspected_from?: string;
+  inspected_to?: string;
+  /** Exact, in MHz; or a range with freq_from / freq_to. */
+  frequency?: number;
+  freq_from?: number;
+  freq_to?: number;
+  station_name?: string;
+  programme?: string;
+  province?: string;
+  district?: string;
+  result?: ContentResult;
+  source_type?: ContentSourceType;
   limit?: number;
 }
 
@@ -103,6 +162,46 @@ export interface CountStationsResponse {
   inspected_to: string;
 }
 
+/** One งานคุ้มครอง inspection: its date and ผลการตรวจสอบ side by side. */
+export interface ContentCheck {
+  inspected_date: string | null;
+  result: string | null;
+  programme: string | null;
+  /** The follow-up step, e.g. ส่ง สสจ.; null when none. */
+  process: string | null;
+  status: string | null;
+  chk_id: number | null;
+}
+
+/** One station's งานคุ้มครอง inspections, newest first. */
+export interface ContentStation {
+  station_name: string | null;
+  station_code: string | null;
+  frequency_mhz: number | null;
+  licensee: string | null;
+  province: string | null;
+  district: string | null;
+  /** At least one result is a wrongdoing. */
+  flagged: boolean;
+  inspections: number;
+  latest_date: string | null;
+  checks: ContentCheck[];
+}
+
+export interface ContentInspectionsResponse {
+  work: 'งานคุ้มครอง';
+  inspected_from: string;
+  inspected_to: string | null;
+  inspections: number;
+  stations: number;
+  flagged_stations: number;
+  by_result: Record<string, number>;
+  complete: boolean;
+  /** Flagged stations first, then the most recently inspected. */
+  station_list: ContentStation[];
+  truncated: boolean;
+}
+
 export interface HealthResponse {
   ok: boolean;
   as_of: string | null;
@@ -171,6 +270,13 @@ export function findStations(request: FindStationsRequest): Promise<FindStations
 
 export function countStations(request: CountStationsRequest): Promise<CountStationsResponse> {
   return operRequest('POST', '/count-stations', request);
+}
+
+/** งานคุ้มครอง content inspections, grouped by station. Walks every page. */
+export function contentInspections(
+  request: ContentInspectionsRequest = {},
+): Promise<ContentInspectionsResponse> {
+  return operRequest('POST', '/content-inspections', request);
 }
 
 /** Admin: starts a register rebuild (~35 min). OperError kind 'busy' when one is running. */

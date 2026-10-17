@@ -33,6 +33,10 @@ class FakeApi:
             raise self.error
         return {"inspections": 126, "stations": 122, "by_result": {}, "complete": True}
 
+    def content_inspections(self, **kwargs):
+        self.calls.append(("content_inspections", kwargs))
+        return {"work": "งานคุ้มครอง", "inspections": 3, "stations": 3, "station_list": []}
+
 
 @pytest.fixture
 def register_file(tmp_path):
@@ -179,6 +183,36 @@ def test_count_stations_rejects_a_backwards_range(make_client):
         "inspected_from": "2026-10-15", "inspected_to": "2026-01-01",
     })
     assert res.status_code == 400
+
+
+def test_content_inspections_passes_only_the_given_filters(make_client):
+    api = FakeApi()
+    res = make_client(api).post("/content-inspections", headers=AUTH, json={
+        "frequency": 88, "result": "พบการกระทำผิด",
+    })
+    assert res.status_code == 200
+    assert res.json()["work"] == "งานคุ้มครอง"
+    assert api.calls == [("content_inspections", {"frequency": 88.0, "result": "พบการกระทำผิด", "limit": 25})]
+
+
+def test_content_inspections_passes_dates_through(make_client):
+    from datetime import date
+
+    api = FakeApi()
+    make_client(api).post("/content-inspections", headers=AUTH, json={
+        "inspected_from": "2026-01-01", "inspected_to": "2026-10-16",
+    })
+    assert api.calls[0][1] == {"inspected_from": date(2026, 1, 1), "inspected_to": date(2026, 10, 16), "limit": 25}
+
+
+@pytest.mark.parametrize("body, status", [
+    ({"result": "ผิด"}, 422),
+    ({"source_type": "อื่นๆ"}, 422),
+    ({"inspected_from": "2026-10-15", "inspected_to": "2026-01-01"}, 400),
+    ({"frequency": 88, "colour": "red"}, 422),
+])
+def test_content_inspections_rejects_bad_input(make_client, body, status):
+    assert make_client(FakeApi()).post("/content-inspections", headers=AUTH, json=body).status_code == status
 
 
 @pytest.mark.parametrize("error, status, kind", [

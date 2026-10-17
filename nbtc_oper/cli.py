@@ -6,6 +6,7 @@
     uv run python -m nbtc_oper stations --province ชัยภูมิ --source OPER
     uv run python -m nbtc_oper search --reported-from 2026-01-01 --source-type-id 2 --count
     uv run python -m nbtc_oper register    # save the station register for find_stations
+    uv run python -m nbtc_oper -o - content --frequency 88   # งานคุ้มครอง inspections
 """
 
 import argparse
@@ -15,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import config, register
-from .api import NbtcOper
+from .api import ANY_VIOLATION, CONTENT_RESULTS, CONTENT_SOURCE_TYPES, NbtcOper
 from .client import NbtcError
 from .config import CredentialsNotFound
 from .places import UnknownPlace
@@ -80,6 +81,23 @@ def _parser() -> argparse.ArgumentParser:
     n.add_argument("--max-pages", type=int)
     n.add_argument("--count", action="store_true",
                    help="print only the portal's result total (1 request, no file)")
+    c = sub.add_parser("content", help="งานคุ้มครอง content inspections by station (FF28ChkSch.aspx)")
+    c.add_argument("--from", dest="inspected_from", metavar="DATE",
+                   help="inspected on/after (ISO; default 1 January this year)")
+    c.add_argument("--to", dest="inspected_to", metavar="DATE", help="inspected on/before (ISO)")
+    c.add_argument("--frequency", type=float, help="exact frequency in MHz")
+    c.add_argument("--freq-from", type=float)
+    c.add_argument("--freq-to", type=float)
+    c.add_argument("--station-name")
+    c.add_argument("--programme", help="programme (รายการ) name contains")
+    c.add_argument("--province", help="Thai name or code")
+    c.add_argument("--district", help="Thai name or code")
+    c.add_argument("--result", choices=[*CONTENT_RESULTS, ANY_VIOLATION], metavar="RESULT",
+                   help=f"a ผลการตรวจสอบ label, or {ANY_VIOLATION} for any wrongdoing")
+    c.add_argument("--source-type", choices=list(CONTENT_SOURCE_TYPES), metavar="TYPE",
+                   help="e.g. เรื่องร้องเรียน (default: every kind)")
+    c.add_argument("--limit", type=int, default=25, help="stations listed (default 25)")
+
     r = sub.add_parser("register", help="save the whole station register (.nbtc_oper/register.json)")
     r.add_argument("--area-id", type=int, default=8)
     r.add_argument("--station-type-id", type=int, default=4)
@@ -109,6 +127,17 @@ def _run(args) -> tuple[str, object]:
             file=sys.stderr,
         )
         return "register", None
+
+    if args.command == "content":
+        filters = {k: v for k, v in vars(args).items()
+                   if k not in {"command", "output", "fresh", "ver_id", "no_raw"} and v is not None}
+        found = api.content_inspections(fresh=args.fresh, **filters)
+        print(
+            f"{found.get('stations')} station(s) in {found.get('inspections')} inspection(s), "
+            f"{found.get('flagged_stations')} flagged, {api.requests_sent} request(s) sent",
+            file=sys.stderr,
+        )
+        return f"content-{datetime.now():%Y%m%d-%H%M%S}", found
 
     skip = {"command", "output", "fresh", "ver_id", "no_raw", "details", "count", "count_stations"}
     filters = {k: v for k, v in vars(args).items() if k not in skip and v is not None}

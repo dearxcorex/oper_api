@@ -2,7 +2,8 @@
 
 Runs on a home machine because Cloudflare challenges the portal from cloud IPs
 (Vercel included), and is reached through Tailscale Funnel. Read-only: only
-find_stations summaries (coordinates and contact phone included) and inspection counts.
+find_stations summaries (coordinates and contact phone included), งานตรวจสอบ inspection
+counts, and งานคุ้มครอง content inspections.
 find_stations answers from the saved register (python -m nbtc_oper register)
 when there is one, and walks the portal live, within LIVE_TIME_LIMIT, when
 there is not. POST /refresh rebuilds the register in the background.
@@ -24,6 +25,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from nbtc_oper import config, register
+from nbtc_oper.api import ANY_VIOLATION, CONTENT_RESULTS, CONTENT_SOURCE_TYPES
 from nbtc_oper import CloudflareChallenge, CredentialsNotFound, LoginFailed, NbtcError, NbtcOper
 from nbtc_oper.places import UnknownPlace
 
@@ -55,6 +57,25 @@ class CountStations(BaseModel):
     district: str | None = None
     result: Literal["ตรงตามมาตรฐาน", "ไม่ตรงตามมาตรฐาน"] | None = None  # the portal's OpinionDet
     limit: int = Field(25, ge=1, le=100)  # stations named in station_list
+
+
+class ContentInspections(BaseModel):
+    """งานคุ้มครอง: the FF28 content and advertising inspections."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    inspected_from: date | None = None  # None: 1 January this year
+    inspected_to: date | None = None
+    frequency: float | None = None
+    freq_from: float | None = None
+    freq_to: float | None = None
+    station_name: str | None = None
+    programme: str | None = None
+    province: str | None = None
+    district: str | None = None
+    result: Literal[tuple([*CONTENT_RESULTS, ANY_VIOLATION])] | None = None
+    source_type: Literal[tuple(CONTENT_SOURCE_TYPES)] | None = None
+    limit: int = Field(25, ge=1, le=100)
 
 
 def create_app(
@@ -170,6 +191,13 @@ def create_app(
             "inspected_from": body.inspected_from.isoformat(),
             "inspected_to": body.inspected_to.isoformat(),
         }
+
+    @app.post("/content-inspections", dependencies=[Depends(authorized)])
+    def content_inspections(body: ContentInspections):
+        if body.inspected_from and body.inspected_to and body.inspected_to < body.inspected_from:
+            raise ValueError("inspected_to is before inspected_from")
+        with lock:
+            return portal().content_inspections(**body.model_dump(exclude_none=True))
 
     return app
 
